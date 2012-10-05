@@ -35,7 +35,7 @@ namespace Lokad.Cqrs
 
         public void Send(object message, params MessageAttribute[] attributes)
         {
-            var envelopeId = Guid.NewGuid().ToString();
+            var envelopeId = Guid.NewGuid().ToString().ToLowerInvariant();
             Send(message, envelopeId);
         }
 
