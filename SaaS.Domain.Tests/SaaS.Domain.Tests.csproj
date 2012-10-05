@@ -35,11 +35,13 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Library\NUnit\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="protobuf-net">
-      <HintPath>..\SaaS.Wires\bin\Debug\protobuf-net.dll</HintPath>
+    <Reference Include="protobuf-net, Version=2.0.0.470, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Library\ProtoBuf-net\protobuf-net.dll</HintPath>
     </Reference>
-    <Reference Include="ServiceStack.Text">
-      <HintPath>..\SaaS.Wires\bin\Debug\ServiceStack.Text.dll</HintPath>
+    <Reference Include="ServiceStack.Text, Version=2.2.6.33214, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Library\ServiceStack\ServiceStack.Text.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
