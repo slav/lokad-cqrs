@@ -76,7 +76,7 @@ interface Security (SecurityId Id)
     const token = string token;
 
     CreateSecurityAggregate? () 
-      explicit "Create security group"
+      explicit "Create security"
 
     CreateSecurityFromRegistration? (registration, string login, string pwd, display, string optionalIdentity)
 

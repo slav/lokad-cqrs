@@ -87,7 +87,7 @@ namespace Lokad.CodeDsl
 
         public enum Kinds
         {
-            Field, StringRepresentation
+            Field, Representation
         }
     }
 
@@ -102,7 +102,7 @@ namespace Lokad.CodeDsl
             Modifiers = modifiers;
         }
 
-        public string StringRepresentation;
+        public string Representation;
 
         public List<Member> Members = new List<Member>();
     }

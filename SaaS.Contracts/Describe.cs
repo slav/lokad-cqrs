@@ -15,6 +15,11 @@ namespace SaaS
 {
     public static class Describe
     {
+        public static string Duh(ISampleMessage m)
+        {
+            return m.ToString();
+        }
+
         public static readonly IDictionary<Type, MethodInfo> Dict = ToDictionary();
 
         static Dictionary<Type, MethodInfo> ToDictionary()
@@ -48,18 +53,6 @@ namespace SaaS
             }
         }
 
-        static string PrintAdjusted(string adj, string text)
-        {
-            bool first = true;
-            var builder = new StringBuilder();
-            foreach (var s in text.Split(new[] {Environment.NewLine}, StringSplitOptions.None))
-            {
-                builder.Append(first ? adj : new string(' ', adj.Length));
-                builder.AppendLine(s);
-                first = false;
-            }
-            return builder.ToString().TrimEnd();
-        }
 
         public static bool TryDescribe(object e, out string description)
         {

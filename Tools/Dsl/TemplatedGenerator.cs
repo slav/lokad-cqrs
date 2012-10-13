@@ -141,36 +141,46 @@ public sealed class {0}";
 
         static void WriteToString(CodeWriter writer, Message contract)
         {
-            if (string.IsNullOrWhiteSpace(contract.StringRepresentation))
+            if (string.IsNullOrWhiteSpace(contract.Representation))
                 return;
 
             writer.WriteLine();
             writer.WriteLine("public override string ToString()");
             writer.WriteLine("{");
             writer.Indent += 1;
+            writer.Write("return ");
+            var text = contract.Representation;
 
-            var text = contract.StringRepresentation;
-            var active = new List<string>();
-            foreach (var member in contract.Members)
+            if (text.StartsWith("\""))
             {
-                text = ReplaceAdd(text, "{" + member.DslName + ":", "{" + active.Count + ":", active, member);
-                text = ReplaceAdd(text, "{" + member.DslName + "}", "{" + active.Count + "}", active, member);
-                
-
-                if (member.DslName != member.Name)
+                var active = new List<string>();
+                foreach (var member in contract.Members)
                 {
-                    text = ReplaceAdd(text, "{" + member.Name + ":", "{" + active.Count + ":", active, member);
-                    text = ReplaceAdd(text, "{" + member.Name + "}", "{" + active.Count + "}", active, member);
+                    text = ReplaceAdd(text, "{" + member.DslName + ":", "{" + active.Count + ":", active, member);
+                    text = ReplaceAdd(text, "{" + member.DslName + "}", "{" + active.Count + "}", active, member);
+
+
+                    if (member.DslName != member.Name)
+                    {
+                        text = ReplaceAdd(text, "{" + member.Name + ":", "{" + active.Count + ":", active, member);
+                        text = ReplaceAdd(text, "{" + member.Name + "}", "{" + active.Count + "}", active, member);
+                    }
                 }
+
+
+                writer.Write("string.Format(@{0}", text);
+
+                foreach (var variable in active)
+                {
+                    writer.Write(", " + GeneratorUtil.MemberCase(variable));
+                }
+                writer.WriteLine(");");
             }
-
-            writer.Write("return string.Format(@{0}", text);
-
-            foreach (var variable in active)
+            else
             {
-                writer.Write(", " + GeneratorUtil.MemberCase(variable));
+                writer.Write(text);
+                writer.WriteLine(";");
             }
-            writer.WriteLine(");");
             writer.Indent -= 1;
             writer.WriteLine("}");
         }

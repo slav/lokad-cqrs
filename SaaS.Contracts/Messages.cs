@@ -137,7 +137,7 @@ namespace SaaS
         
         public override string ToString()
         {
-            return string.Format(@"Create security group");
+            return string.Format(@"Create security");
         }
     }
     

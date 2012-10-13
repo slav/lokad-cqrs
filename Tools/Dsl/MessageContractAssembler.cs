@@ -54,8 +54,15 @@ namespace Lokad.CodeDsl
             if (tree.Type == MessageContractsLexer.StringRepresentationToken)
             {
                 var text = tree.GetChild(0).Text;
-                yield return new Member(null, text, null, Member.Kinds.StringRepresentation);
+                yield return new Member(null, text, null, Member.Kinds.Representation);
                 yield break;
+            }
+            if (tree.Type == MessageContractsLexer.DescribeRepresentationToken)
+            {
+                var text = string.Join(".", tree.Children().Select(c => c.Text)) + "(this)";
+                yield return new Member(null, text, null, Member.Kinds.Representation);
+                yield break;
+                
             }
             throw new InvalidOperationException("Unexpected token: " + tree.Text);
         }
@@ -117,13 +124,13 @@ namespace Lokad.CodeDsl
                         message.Members.AddRange(members.Where(m => m.Kind == Member.Kinds.Field));
 
                         var stringRepresentations =
-                            members.Where(m => m.Kind == Member.Kinds.StringRepresentation).ToArray();
+                            members.Where(m => m.Kind == Member.Kinds.Representation).ToArray();
                         switch (stringRepresentations.Length)
                         {
                             case 0:
                                 break;
                             case 1:
-                                message.StringRepresentation = stringRepresentations[0].Name;
+                                message.Representation = stringRepresentations[0].Name;
                                 break;
                             default:
                                 throw new InvalidOperationException("Only one string representation per message");
