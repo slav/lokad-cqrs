@@ -19,13 +19,16 @@ namespace Lokad.CodeDsl
 
         static void Main(string[] args)
         {
-            var info = new DirectoryInfo("..\\..\\..\\..");
+            var info = new DirectoryInfo(args.FirstOrDefault() ?? "..\\..\\..\\..");
+
+            Console.WriteLine("Lookup path: {0}", info.FullName);
 
             var files = info.GetFiles("*.ddd", SearchOption.AllDirectories);
 
             foreach (var fileInfo in files)
             {
                 var text = File.ReadAllText(fileInfo.FullName);
+                Console.WriteLine("  Watch: {0}", fileInfo.Name);
                 Changed(fileInfo.FullName, text);
                 Rebuild(text, fileInfo.FullName);
             }
@@ -58,7 +61,7 @@ namespace Lokad.CodeDsl
                     return;
 
 
-                Console.WriteLine("{1}-{0}", args.Name, args.ChangeType);
+                Console.WriteLine("Changed: {1}-{0}", args.Name, args.ChangeType);
                 Rebuild(text, args.FullPath);
                 SystemSounds.Beep.Play();
             }
@@ -101,6 +104,7 @@ public partial class {0}",
 
   
             File.WriteAllText(Path.ChangeExtension(fullPath, "cs"), GeneratorUtil.Build(dsl, generator));
+            Console.WriteLine("Updated");
         }
     }
 }
