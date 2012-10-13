@@ -71,6 +71,11 @@ public sealed class {0}";
         {
             foreach (var contract in context.Contracts)
             {
+                writer.WriteLine();
+
+                WriteSummary(writer, contract);
+
+
                 writer.Write(ClassNameTemplate, contract.Name, context.CurrentExtern);
 
                 if (contract.Modifiers.Any())
@@ -112,6 +117,19 @@ public sealed class {0}";
 
                 GenerateEntityInterface(entity, writer, "?", "public interface I{0}ApplicationService");
                 GenerateEntityInterface(entity, writer, "!", "public interface I{0}State");
+            }
+        }
+
+        static void WriteSummary(CodeWriter writer, Message contract)
+        {
+            if (!string.IsNullOrWhiteSpace(contract.Representation) && contract.Representation.StartsWith("\""))
+            {
+                writer.WriteLine("/// <summary>");
+                foreach (var line in contract.Representation.Trim('"').Split('\n'))
+                {
+                    writer.WriteLine("/// " + line.Trim());
+                }
+                writer.WriteLine("/// </summary>");
             }
         }
 
@@ -284,11 +302,10 @@ public sealed class {0}";
         }
 
         public int Indent { get { return _writer.Indent; } set { _writer.Indent = value; } }
-        public void Write(string format, params object[] args)
+        public void Write(string txt)
         {
-            var txt = string.Format(format, args);
-            var lines = txt.Split(new[] {Environment.NewLine}, StringSplitOptions.None);
-            
+            var lines = txt.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -299,6 +316,11 @@ public sealed class {0}";
                     _writer.WriteLine(lines[i]);
 
             }
+        }
+        public void Write(string format, params object[] args)
+        {
+            var txt = string.Format(format, args);
+            Write(txt);
         }
 
         public void WriteLine()
