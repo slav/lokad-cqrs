@@ -38,4 +38,39 @@ namespace Lokad.Cqrs.StreamingStorage
         {
         }
     }
+
+    [Serializable]
+    public class StreamItemNotFoundException : StreamBaseException
+    {
+        public StreamItemNotFoundException(string message, Exception inner)
+            : base(message, inner)
+        {
+        }
+
+
+        protected StreamItemNotFoundException(
+            SerializationInfo info,
+            StreamingContext context)
+            : base(info, context)
+        {
+        }
+    }
+
+    [Serializable]
+    public class StreamContainerNotFoundException : StreamBaseException
+    {
+        public StreamContainerNotFoundException(string message, Exception inner)
+            : base(message, inner)
+        {
+        }
+
+        protected StreamContainerNotFoundException(
+            SerializationInfo info,
+            StreamingContext context)
+            : base(info, context)
+        {
+        }
+    }
+
+
 }

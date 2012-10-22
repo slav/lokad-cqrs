@@ -101,10 +101,8 @@
     <Compile Include="DataStreams\FileStreamContainer.cs" />
     <Compile Include="DataStreams\IStreamContainer.cs" />
     <Compile Include="DataStreams\IStreamRoot.cs" />
-    <Compile Include="DataStreams\StreamBaseException.cs" />
+    <Compile Include="DataStreams\Exceptions.cs" />
     <Compile Include="DataStreams\BinaryStreams.cs" />
-    <Compile Include="DataStreams\StreamContainerNotFoundException.cs" />
-    <Compile Include="DataStreams\StreamItemNotFoundException.cs" />
     <Compile Include="StorageFramesEvil.cs" />
     <Compile Include="SystemObserver.cs" />
     <Compile Include="TapeStorage\FileAppendOnlyStore.cs" />
