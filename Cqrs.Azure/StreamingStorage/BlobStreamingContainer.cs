@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using Lokad.Cqrs.StreamingStorage;
 using Microsoft.WindowsAzure.StorageClient;
@@ -118,7 +119,9 @@ namespace Lokad.Cqrs.Feature.StreamingStorage
                 switch (e.ErrorCode)
                 {
                     case StorageErrorCode.ContainerNotFound:
-                        throw StreamErrors.ContainerNotFound(this, e);
+                        var message = string.Format(CultureInfo.InvariantCulture, "Storage container was not found: '{0}'.",
+                            this.FullPath);
+                        throw new StreamContainerNotFoundException(message, e);
                     default:
                         throw;
                 }
@@ -144,7 +147,9 @@ namespace Lokad.Cqrs.Feature.StreamingStorage
                 switch (e.ErrorCode)
                 {
                     case StorageErrorCode.ContainerNotFound:
-                        throw StreamErrors.ContainerNotFound(this, e);
+                        var message = string.Format(CultureInfo.InvariantCulture, "Storage container was not found: '{0}'.",
+                            this.FullPath);
+                        throw new StreamContainerNotFoundException(message, e);
                     default:
                         throw;
                 }

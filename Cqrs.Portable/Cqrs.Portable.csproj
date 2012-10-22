@@ -104,7 +104,6 @@
     <Compile Include="DataStreams\StreamBaseException.cs" />
     <Compile Include="DataStreams\BinaryStreams.cs" />
     <Compile Include="DataStreams\StreamContainerNotFoundException.cs" />
-    <Compile Include="DataStreams\StreamErrors.cs" />
     <Compile Include="DataStreams\StreamItemNotFoundException.cs" />
     <Compile Include="StorageFramesEvil.cs" />
     <Compile Include="SystemObserver.cs" />
