@@ -49,6 +49,7 @@
     <Compile Include="CQRS.Portable\FileDocumentReaderWriterTest.cs" />
     <Compile Include="CQRS.Portable\FileDocumentStoreTest.cs" />
     <Compile Include="CQRS.Portable\MemoryDocumentReaderWriterTest.cs" />
+    <Compile Include="CQRS.Portable\MemoryDocumentStoreTest.cs" />
     <Compile Include="spec_syntax.cs" />
   </ItemGroup>
   <ItemGroup>

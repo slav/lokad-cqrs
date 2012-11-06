@@ -13,8 +13,7 @@ namespace Sample.CQRS.Portable
         [SetUp]
         public void Setup()
         {
-            var store=new ConcurrentDictionary<string, byte[]>();
-            _container = new MemoryDocumentReaderWriter<Guid, int>(new DocumentStrategy(), store);
+            _container = new MemoryDocumentReaderWriter<Guid, int>(new DocumentStrategy(), new ConcurrentDictionary<string, byte[]>());
         }
 
         [Test]
