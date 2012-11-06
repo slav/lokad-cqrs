@@ -46,12 +46,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompareObjects.cs" />
+    <Compile Include="CQRS.Portable\FileDocumentReaderWriterTest.cs" />
     <Compile Include="spec_syntax.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Cqrs.Portable\Cqrs.Portable.csproj">
+      <Project>{4e2e749c-4d6f-4ef8-8e9d-96d467306997}</Project>
+      <Name>Cqrs.Portable</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\SaaS.Contracts\SaaS.Contracts.csproj">
       <Project>{2A4A9A2C-5D8D-4078-B118-02A1D386A9FA}</Project>
       <Name>SaaS.Contracts</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\SaaS.Wires\SaaS.Wires.csproj">
+      <Project>{a6870fb6-d70d-4c70-81c8-74c191765fbc}</Project>
+      <Name>SaaS.Wires</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
