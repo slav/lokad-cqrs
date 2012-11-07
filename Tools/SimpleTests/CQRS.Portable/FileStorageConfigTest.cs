@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
 using Lokad.Cqrs;
+using Lokad.Cqrs.AtomicStorage;
 using NUnit.Framework;
+using SaaS.Wires;
 
 namespace Sample.CQRS.Portable
 {
@@ -105,5 +107,90 @@ namespace Sample.CQRS.Portable
             //WHEN
             Assert.AreEqual(false, Directory.Exists(_configPath));
         }
+
+        [Test]
+        public void create_document_store()
+        {
+            //GIVEN
+            var documentStrategy = new DocumentStrategy();
+            var store = _config.CreateDocumentStore(documentStrategy);
+
+            //WHEN
+            Assert.IsTrue(store is FileDocumentStore);
+            Assert.AreEqual(new Uri(Path.GetFullPath(_configPath)).AbsolutePath, store.ToString());
+            Assert.AreEqual(documentStrategy, store.Strategy);
+        }
+
+        [Test]
+        public void create_config_and_reset()
+        {
+            //GIVEN
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(path, "testaccount", true);
+
+            //WHEN
+            Assert.AreEqual(path, config.FullPath);
+            Assert.IsTrue(Directory.Exists(path));
+            Assert.AreEqual("testaccount", config.AccountName);
+        }
+
+        [Test]
+        public void create_config_and_not_reset()
+        {
+            //GIVEN
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(path, "testaccount", false);
+
+            //WHEN
+            Assert.AreEqual(path, config.FullPath);
+            Assert.IsFalse(Directory.Exists(path));
+            Assert.AreEqual("testaccount", config.AccountName);
+        }
+
+        [Test]
+        public void create_config_with_no_account_name()
+        {
+            //GIVEN
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(path);
+
+            //WHEN
+            Assert.AreEqual(path, config.FullPath);
+            Assert.IsFalse(Directory.Exists(path));
+            Assert.AreEqual(new DirectoryInfo(path).Name, config.AccountName);
+        }
+
+        [Test]
+        public void create_config_with_directory_info()
+        {
+            //GIVEN
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(new DirectoryInfo(path));
+
+            //WHEN
+            Assert.AreEqual(path, config.FullPath);
+            Assert.IsFalse(Directory.Exists(path));
+            Assert.AreEqual(new DirectoryInfo(path).Name, config.AccountName);
+        }
+
+        [Test, Ignore("to be realized FileStorage.CreateStreaming")]
+        public void create_streaming()
+        {}
+
+        [Test, Ignore("to be realized FileStorage.CreateInbox")]
+        public void create_inbox()
+        { }
+
+        [Test, Ignore("to be realized FileStorage.CreateQueueWriter")]
+        public void create_QueueWriter()
+        { }
+
+        [Test, Ignore("to be realized FileStorage.CreateAppendOnlyStore")]
+        public void create_AppendOnlyStore()
+        { }
+
+        [Test, Ignore("to be realized FileStorage.CreateMessageSender")]
+        public void create_MessageSender()
+        { }
     }
 }
