@@ -41,10 +41,11 @@ namespace Lokad.Cqrs.AtomicStorage
         {
             _store.Clear();
         }
+
         public void Reset(string bucketNames)
         {
-
-            throw new NotSupportedException();
+            ConcurrentDictionary<string, byte[]> deletedValue;
+            _store.TryRemove(bucketNames, out deletedValue);
         }
 
 
