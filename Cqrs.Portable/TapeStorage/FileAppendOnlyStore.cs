@@ -72,6 +72,7 @@ namespace Lokad.Cqrs.TapeStorage
                 if (fileInfo.Length == 0)
                 {
                     fileInfo.Delete();
+                    continue;
                 }
 
                 using (var reader = fileInfo.OpenRead())
