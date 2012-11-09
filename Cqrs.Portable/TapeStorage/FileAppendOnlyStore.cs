@@ -164,7 +164,9 @@ namespace Lokad.Cqrs.TapeStorage
         {
             // no lock is needed.
             DataWithVersion[] list;
-            return _cacheByKey.TryGetValue(streamName, out list) ? list : Enumerable.Empty<DataWithVersion>();
+            var result = _cacheByKey.TryGetValue(streamName, out list) ? list : Enumerable.Empty<DataWithVersion>();
+
+            return result.Where(x => x.StoreVersion > afterVersion).Take(maxCount);
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
