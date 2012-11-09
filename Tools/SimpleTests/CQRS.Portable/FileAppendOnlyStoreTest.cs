@@ -162,5 +162,92 @@ namespace Sample.CQRS.Portable
                 Assert.AreEqual(currentVersion + 3, store.GetCurrentVersion());
             }
         }
+
+        [Test]
+        public void read_all_records_by_stream()
+        {
+            var stream = Guid.NewGuid().ToString();
+
+            using (var store = new FileAppendOnlyStore(new DirectoryInfo(_storePath)))
+            {
+                store.Initialize();
+                for (int i = 0; i < 2; i++)
+                    store.Append(stream, Encoding.UTF8.GetBytes("test message" + i));
+
+                var records = store.ReadRecords(stream, -1, Int32.MaxValue).ToArray();
+
+                Assert.AreEqual(2, records.Length);
+
+                for (int i = 0; i < 2; i++)
+                {
+                    Assert.AreEqual("test message" + i, Encoding.UTF8.GetString(records[i].Data));
+                    Assert.AreEqual(i + 1, records[i].StreamVersion);
+                }
+            }
+        }
+
+        [Test]
+        public void read_records_by_stream_after_version()
+        {
+            var stream = Guid.NewGuid().ToString();
+            using (var store = new FileAppendOnlyStore(new DirectoryInfo(_storePath)))
+            {
+                store.Initialize();
+                var currentVersion = store.GetCurrentVersion();
+
+                for (int i = 0; i < 2; i++)
+                    store.Append(stream, Encoding.UTF8.GetBytes("test message" + i));
+
+                var records = store.ReadRecords(stream, currentVersion + 1, Int32.MaxValue).ToArray();
+
+                Assert.AreEqual(1, records.Length);
+                Assert.AreEqual("test message1", Encoding.UTF8.GetString(records[0].Data));
+                Assert.AreEqual(2, records[0].StreamVersion);
+            }
+        }
+
+        [Test]
+        public void read_store_all_records()
+        {
+            var stream = Guid.NewGuid().ToString();
+            using (var store = new FileAppendOnlyStore(new DirectoryInfo(_storePath)))
+            {
+                store.Initialize();
+                var currentVersion = store.GetCurrentVersion();
+                for (int i = 0; i < 2; i++)
+                    store.Append(stream, Encoding.UTF8.GetBytes("test message" + i));
+
+                var records = store.ReadRecords(-1, Int32.MaxValue).ToArray();
+
+                Assert.AreEqual(currentVersion + 2, records.Length);
+
+                for (var i = currentVersion; i < currentVersion + 2; i++)
+                {
+                    Assert.AreEqual("test message" + (i - currentVersion), Encoding.UTF8.GetString(records[i].Data));
+                    Assert.AreEqual(i - currentVersion + 1, records[i].StreamVersion);
+                    Assert.AreEqual(i+1, records[i].StoreVersion);
+                }
+            }
+        }
+
+        [Test]
+        public void read_store_records_after_version()
+        {
+            var stream = Guid.NewGuid().ToString();
+            using (var store = new FileAppendOnlyStore(new DirectoryInfo(_storePath)))
+            {
+                store.Initialize();
+                var currentVersion = store.GetCurrentVersion();
+                for (int i = 0; i < 2; i++)
+                    store.Append(stream, Encoding.UTF8.GetBytes("test message" + i));
+
+                var records = store.ReadRecords(currentVersion+1, Int32.MaxValue).ToArray();
+
+                Assert.AreEqual(1, records.Length);
+                Assert.AreEqual("test message1" , Encoding.UTF8.GetString(records[0].Data));
+                Assert.AreEqual(2, records[0].StreamVersion);
+                Assert.AreEqual(currentVersion+2, records[0].StoreVersion);
+            }
+        }
     }
 }
