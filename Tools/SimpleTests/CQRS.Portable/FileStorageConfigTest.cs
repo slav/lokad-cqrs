@@ -179,7 +179,14 @@ namespace Sample.CQRS.Portable
 
         [Test, Ignore("to be realized FileStorage.CreateInbox")]
         public void create_inbox()
-        { }
+        {
+            //GIVEN
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(new DirectoryInfo(path));
+            var inbox = config.CreateInbox("inbox name", x => new TimeSpan(x));
+            
+            
+        }
 
         [Test, Ignore("to be realized FileStorage.CreateQueueWriter")]
         public void create_QueueWriter()
