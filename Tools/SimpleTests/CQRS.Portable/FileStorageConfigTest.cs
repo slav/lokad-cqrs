@@ -173,19 +173,38 @@ namespace Sample.CQRS.Portable
             Assert.AreEqual(new DirectoryInfo(path).Name, config.AccountName);
         }
 
-        [Test, Ignore("to be realized FileStorage.CreateStreaming")]
+        [Test]
         public void create_streaming()
-        {}
+        {
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(path);
+            var container = config.CreateStreaming();
 
-        [Test, Ignore("to be realized FileStorage.CreateInbox")]
+            Assert.IsTrue(Directory.Exists(path));
+            CollectionAssert.IsEmpty(container.ListContainers());
+        }
+
+        [Test]
+        public void when_create_child_streaming()
+        {
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(path);
+            var container = config.CreateStreaming("child");
+
+            Assert.IsTrue(Directory.Exists(path));
+            Assert.IsTrue(Directory.Exists(Path.Combine(path,"child")));
+            Assert.IsTrue(container.Exists());
+        }
+
+        [Test]
         public void create_inbox()
         {
             //GIVEN
             var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
             var config = FileStorage.CreateConfig(new DirectoryInfo(path));
             var inbox = config.CreateInbox("inbox name", x => new TimeSpan(x));
-            
-            
+
+            Assert.IsNotNull(inbox);
         }
 
         [Test, Ignore("to be realized FileStorage.CreateQueueWriter")]
