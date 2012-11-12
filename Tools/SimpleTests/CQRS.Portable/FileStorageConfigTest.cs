@@ -211,9 +211,16 @@ namespace Sample.CQRS.Portable
         public void create_QueueWriter()
         { }
 
-        [Test, Ignore("to be realized FileStorage.CreateAppendOnlyStore")]
+        [Test]
         public void create_AppendOnlyStore()
-        { }
+        {
+            //GIVEN
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(new DirectoryInfo(path));
+            var appendOnlyStore = config.CreateAppendOnlyStore("append_only");
+
+            Assert.IsNotNull(appendOnlyStore);
+        }
 
         [Test, Ignore("to be realized FileStorage.CreateMessageSender")]
         public void create_MessageSender()
