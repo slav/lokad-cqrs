@@ -2,6 +2,7 @@
 using System.IO;
 using Lokad.Cqrs;
 using Lokad.Cqrs.AtomicStorage;
+using Lokad.Cqrs.Envelope;
 using NUnit.Framework;
 using SaaS.Wires;
 
@@ -192,7 +193,7 @@ namespace Sample.CQRS.Portable
             var container = config.CreateStreaming("child");
 
             Assert.IsTrue(Directory.Exists(path));
-            Assert.IsTrue(Directory.Exists(Path.Combine(path,"child")));
+            Assert.IsTrue(Directory.Exists(Path.Combine(path, "child")));
             Assert.IsTrue(container.Exists());
         }
 
@@ -231,8 +232,16 @@ namespace Sample.CQRS.Portable
             Assert.IsNotNull(appendOnlyStore);
         }
 
-        [Test, Ignore("to be realized FileStorage.CreateMessageSender")]
+        [Test]
         public void create_MessageSender()
-        { }
+        {
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(new DirectoryInfo(path));
+            var serializer = new TestMessageSerializer(new[] { typeof(SerializerTest1), typeof(SerializerTest2), });
+            var streamer = new EnvelopeStreamer(serializer);
+            var sender = config.CreateMessageSender(streamer, "QueueName");
+
+            Assert.IsNotNull(sender);
+        }
     }
 }
