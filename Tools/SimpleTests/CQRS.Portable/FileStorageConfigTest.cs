@@ -207,9 +207,18 @@ namespace Sample.CQRS.Portable
             Assert.IsNotNull(inbox);
         }
 
-        [Test, Ignore("to be realized FileStorage.CreateQueueWriter")]
+        [Test]
         public void create_QueueWriter()
-        { }
+        {
+            //GIVEN
+            var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs-test", Guid.NewGuid().ToString());
+            var config = FileStorage.CreateConfig(new DirectoryInfo(path));
+            var queueWriter = config.CreateQueueWriter("QueueName");
+
+            Assert.IsNotNull(queueWriter);
+            Assert.AreEqual("QueueName", queueWriter.Name);
+            Assert.IsTrue(Directory.Exists(path));
+        }
 
         [Test]
         public void create_AppendOnlyStore()
