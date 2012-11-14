@@ -53,12 +53,14 @@
     <Compile Include="CompareObjects.cs" />
     <Compile Include="CQRS.Portable\DocumentReaderWriterTest.cs" />
     <Compile Include="CQRS.Portable\DocumentStoreTest.cs" />
+    <Compile Include="CQRS.Portable\EnvelopeStreamerTest.cs" />
     <Compile Include="CQRS.Portable\FileAppendOnlyStoreTest.cs" />
     <Compile Include="CQRS.Portable\FilePartitionInboxTest.cs" />
     <Compile Include="CQRS.Portable\FileQueueWriterTest.cs" />
     <Compile Include="CQRS.Portable\FileStorageConfigTest.cs" />
     <Compile Include="CQRS.Portable\FileStreamContainerTest.cs" />
     <Compile Include="CQRS.Portable\ImmutableEnvelopeTest.cs" />
+    <Compile Include="CQRS.Portable\MessageSenderTest.cs" />
     <Compile Include="CQRS.Portable\MessageSerializerTest.cs" />
     <Compile Include="CQRS.Portable\StatelessFileQueueReaderTest.cs" />
     <Compile Include="CQRS.Portable\StorageFramesEvilTest.cs" />
