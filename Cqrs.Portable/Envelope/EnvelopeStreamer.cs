@@ -35,7 +35,7 @@ namespace Lokad.Cqrs.Envelope
 
                 MessageSerializer.WriteCompactInt(Signature, mem);
 
-                StorageFramesEvil.WriteFrame(envelope.EnvelopeId, DateTime.UtcNow.Ticks, data, mem);
+                StorageFramesEvil.WriteFrame(envelope.EnvelopeId, envelope.CreatedUtc.Ticks, data, mem);
                 return mem.ToArray();
             }
         }

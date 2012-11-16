@@ -25,7 +25,7 @@ namespace Sample.CQRS.Portable
             var envelope = streamer.ReadAsEnvelopeData(savedBytes);
 
             Assert.AreEqual("EnvId", envelope.EnvelopeId);
-            //Assert.AreEqual(date, envelope.CreatedUtc);
+            Assert.AreEqual(date, envelope.CreatedUtc);
             Assert.AreEqual(2, envelope.Attributes.Count);
             Assert.AreEqual("key1", envelope.Attributes.ToArray()[0].Key);
             Assert.AreEqual("val1", envelope.Attributes.ToArray()[0].Value);
