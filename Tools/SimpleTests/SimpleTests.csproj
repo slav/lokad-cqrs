@@ -62,6 +62,7 @@
     <Compile Include="CQRS.Portable\ImmutableEnvelopeTest.cs" />
     <Compile Include="CQRS.Portable\MessageSenderTest.cs" />
     <Compile Include="CQRS.Portable\MessageSerializerTest.cs" />
+    <Compile Include="CQRS.Portable\MessageStoreTest.cs" />
     <Compile Include="CQRS.Portable\StatelessFileQueueReaderTest.cs" />
     <Compile Include="CQRS.Portable\StorageFramesEvilTest.cs" />
     <Compile Include="spec_syntax.cs" />
