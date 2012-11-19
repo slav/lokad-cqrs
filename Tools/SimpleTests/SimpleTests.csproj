@@ -53,6 +53,7 @@
     <Compile Include="CompareObjects.cs" />
     <Compile Include="CQRS.Portable\DocumentReaderWriterTest.cs" />
     <Compile Include="CQRS.Portable\DocumentStoreTest.cs" />
+    <Compile Include="CQRS.Portable\EnvelopeDispatcherTest.cs" />
     <Compile Include="CQRS.Portable\EnvelopeQuarantineTest.cs" />
     <Compile Include="CQRS.Portable\EnvelopeStreamerTest.cs" />
     <Compile Include="CQRS.Portable\EventStoreTest.cs" />

@@ -7,13 +7,24 @@ namespace Sample.CQRS.Portable
 {
     public class EnvelopeQuarantineTest
     {
+        private MessageSender _commandRouter;
+        private MessageSender _functionalRecorder;
+        private TypedMessageSender _typedMessageSender;
+        private TestEnvelopeStreamer _commandEnvelopeStreamer, _functionalEnvelopeStreamer;
+        private TestQueueWriter _commandQueueWriter;
+        private TestQueueWriter _functionalQueueWriter;
+
         [SetUp]
         public void SetUp()
         {
-            var serializer = new TestMessageSerializer(new[] { typeof(SerializerTest1), typeof(SerializerTest2), });
-            IEnvelopeStreamer streamer = new EnvelopeStreamer(serializer);
-            //TypedMessageSender writer = 
-            //, IStreamContainer root
+            _commandEnvelopeStreamer = new TestEnvelopeStreamer(new byte[] { 1, 2, 3 });
+            _commandQueueWriter = new TestQueueWriter();
+            _commandRouter = new MessageSender(_commandEnvelopeStreamer, _commandQueueWriter);
+            _functionalEnvelopeStreamer = new TestEnvelopeStreamer(new byte[] { 4, 5, 6 });
+            _functionalQueueWriter = new TestQueueWriter();
+            _functionalRecorder = new MessageSender(_functionalEnvelopeStreamer, _functionalQueueWriter);
+            _typedMessageSender = new TypedMessageSender(_commandRouter, _functionalRecorder);
+            IEnvelopeStreamer streamer = new TestEnvelopeStreamer();
         }
     }
 }

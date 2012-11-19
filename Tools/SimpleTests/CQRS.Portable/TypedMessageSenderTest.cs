@@ -140,6 +140,8 @@ namespace Sample.CQRS.Portable
 
         public ImmutableEnvelope ReadAsEnvelopeData(byte[] buffer)
         {
+            if(buffer==null)
+                throw new ArgumentNullException();
             return new ImmutableEnvelope("EnvId", DateTime.UtcNow, "Test meesage", new[] { new MessageAttribute("key", "value"), });
         }
     }
