@@ -7,7 +7,7 @@ using Lokad.Cqrs.Evil;
 using NUnit.Framework;
 using ServiceStack.Text;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests.Envelope
 {
     public class MessageSerializerTest
     {

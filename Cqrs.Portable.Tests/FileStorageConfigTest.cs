@@ -1,12 +1,13 @@
 ﻿using System;
 using System.IO;
+using Cqrs.Portable.Tests.Envelope;
 using Lokad.Cqrs;
 using Lokad.Cqrs.AtomicStorage;
 using Lokad.Cqrs.Envelope;
 using NUnit.Framework;
 using SaaS.Wires;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests
 {
     public class FileStorageConfigTest
     {

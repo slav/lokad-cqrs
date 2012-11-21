@@ -2,9 +2,11 @@
 using System.Text;
 using Lokad.Cqrs;
 using Lokad.Cqrs.Envelope;
+using Lokad.Cqrs.Partition;
 using NUnit.Framework;
+using SaaS;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests.Envelope
 {
     public class EnvelopeDispatcherTest
     {
@@ -32,7 +34,7 @@ namespace Sample.CQRS.Portable
 
             Assert.IsFalse(ActionCalled);
             Assert.IsTrue(_testEnvelopeQuarantine.CallQuarantineMethod);
-            Assert.AreEqual(typeof(ArgumentNullException),_testEnvelopeQuarantine.Exception.GetType());
+            Assert.AreEqual(typeof(ArgumentNullException), _testEnvelopeQuarantine.Exception.GetType());
         }
 
         [Test]
@@ -61,7 +63,7 @@ namespace Sample.CQRS.Portable
         }
     }
 
-    public class TestEnvelopeQuarantine:IEnvelopeQuarantine
+    public class TestEnvelopeQuarantine : IEnvelopeQuarantine
     {
         public byte[] Message { get; set; }
         public Exception Exception { get; set; }
@@ -81,7 +83,56 @@ namespace Sample.CQRS.Portable
 
         public void TryRelease(ImmutableEnvelope context)
         {
-            
+
         }
     }
+
+    public class TestEnvelopeStreamer : IEnvelopeStreamer
+    {
+        public ImmutableEnvelope Envelope { get; private set; }
+        public byte[] Buffer { get; set; }
+
+        public TestEnvelopeStreamer()
+        { }
+
+        public TestEnvelopeStreamer(byte[] buffer)
+        {
+            Buffer = buffer;
+        }
+
+        public byte[] SaveEnvelopeData(ImmutableEnvelope envelope)
+        {
+            Envelope = envelope;
+            Buffer = new byte[] { 1, 2, 3 };
+
+            return Buffer;
+        }
+
+        public ImmutableEnvelope ReadAsEnvelopeData(byte[] buffer)
+        {
+            if (buffer == null)
+                throw new ArgumentNullException();
+            return new ImmutableEnvelope("EnvId", DateTime.UtcNow, "Test meesage", new[] { new MessageAttribute("key", "value"), });
+        }
+    }
+
+    public class TestQueueWriter : IQueueWriter
+    {
+        public byte[] Envelope { get; private set; }
+
+        public string Name { get { return "TestQueueWriter"; } }
+        public void PutMessage(byte[] envelope)
+        {
+            Envelope = envelope;
+        }
+    }
+
+    public class TestCommand : ICommand
+    { }
+
+    public class TestFuncCommand : IFuncCommand
+    { }
+
+    public class TestFuncEvent : IFuncEvent
+    { }
 }

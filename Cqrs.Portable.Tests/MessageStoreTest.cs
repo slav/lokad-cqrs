@@ -1,14 +1,13 @@
 ﻿using System;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
+using Cqrs.Portable.Tests.Envelope;
 using Lokad.Cqrs;
 using Lokad.Cqrs.Envelope;
 using Lokad.Cqrs.TapeStorage;
 using NUnit.Framework;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests
 {
     public class MessageStoreTest
     {
@@ -25,7 +24,6 @@ namespace Sample.CQRS.Portable
             if (!Directory.Exists(_path))
                 Directory.CreateDirectory(_path);
             _appendOnlyStore = new FileAppendOnlyStore(new DirectoryInfo(_path));
-            //_appendOnlyStore.Initialize();
 
             var store = new MessageStore(_appendOnlyStore, _serializer);
             store.AppendToStore("stream1", MessageAttribute.Empty, -1, new[] { new SerializerTest1("msg1") });

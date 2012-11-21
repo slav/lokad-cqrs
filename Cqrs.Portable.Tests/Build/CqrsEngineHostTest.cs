@@ -4,7 +4,7 @@ using Lokad.Cqrs;
 using Lokad.Cqrs.Build;
 using NUnit.Framework;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests.Build
 {
     public class CqrsEngineHostTest
     {

@@ -1,11 +1,12 @@
 ﻿using System;
 using System.IO;
+using Cqrs.Portable.Tests.Envelope;
 using Lokad.Cqrs;
 using Lokad.Cqrs.Envelope;
 using Lokad.Cqrs.Partition;
 using NUnit.Framework;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests
 {
     public class MessageSenderTest
     {

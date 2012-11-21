@@ -1,13 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Lokad.Cqrs;
-using Lokad.Cqrs.StreamingStorage;
 using NUnit.Framework;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests
 {
     public class StorageFramesEvilTest
     {

@@ -4,7 +4,7 @@ using Lokad.Cqrs;
 using Lokad.Cqrs.Envelope;
 using NUnit.Framework;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests.Envelope
 {
     public class EnvelopeStreamerTest
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Lokad.Cqrs;
 using NUnit.Framework;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests
 {
     public class ImmutableEnvelopeTest
     {

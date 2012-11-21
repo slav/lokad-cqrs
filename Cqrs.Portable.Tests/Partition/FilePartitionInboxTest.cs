@@ -4,7 +4,7 @@ using System.Threading;
 using Lokad.Cqrs.Partition;
 using NUnit.Framework;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests.Partition
 {
     public class FilePartitionInboxTest
     {

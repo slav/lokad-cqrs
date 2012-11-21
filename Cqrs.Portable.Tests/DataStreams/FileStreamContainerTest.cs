@@ -1,11 +1,10 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Text;
 using Lokad.Cqrs.StreamingStorage;
 using NUnit.Framework;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests.DataStreams
 {
     public class FileStreamContainerTest
     {
@@ -24,9 +23,6 @@ namespace Sample.CQRS.Portable
         public void TearDown()
         {
             _container.Delete();
-            //var path = Path.Combine(Path.GetTempPath(), "FileStreamContainerTest");
-            //if (Directory.Exists(path))
-            //    Directory.Delete(path, true);
         }
 
         [Test]

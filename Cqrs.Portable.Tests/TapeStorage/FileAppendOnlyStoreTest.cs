@@ -6,7 +6,7 @@ using Lokad.Cqrs;
 using Lokad.Cqrs.TapeStorage;
 using NUnit.Framework;
 
-namespace Sample.CQRS.Portable
+namespace Cqrs.Portable.Tests.TapeStorage
 {
     public class FileAppendOnlyStoreTest
     {
