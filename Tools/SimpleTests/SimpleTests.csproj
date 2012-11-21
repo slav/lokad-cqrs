@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompareObjects.cs" />
+    <Compile Include="CQRS.Portable\CqrsEngineBuilderTest.cs" />
     <Compile Include="CQRS.Portable\DocumentReaderWriterTest.cs" />
     <Compile Include="CQRS.Portable\DocumentStoreTest.cs" />
     <Compile Include="CQRS.Portable\DuplicationManagerTest.cs" />
