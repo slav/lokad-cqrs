@@ -62,6 +62,7 @@
     <Compile Include="CQRS.Portable\FileStorageConfigTest.cs" />
     <Compile Include="CQRS.Portable\FileStreamContainerTest.cs" />
     <Compile Include="CQRS.Portable\ImmutableEnvelopeTest.cs" />
+    <Compile Include="CQRS.Portable\MemoryQuarantineTest.cs" />
     <Compile Include="CQRS.Portable\MessageSenderTest.cs" />
     <Compile Include="CQRS.Portable\MessageSerializerTest.cs" />
     <Compile Include="CQRS.Portable\MessageStoreTest.cs" />
