@@ -76,9 +76,11 @@ namespace Sample.CQRS.Portable
     public class TestEngineProcess : IEngineProcess
     {
         public bool IsInitialized { get; set; }
+        public bool IsStarted { get; set; }
+        public bool IsDisposed { get; set; }
         public void Dispose()
         {
-
+            IsDisposed = true;
         }
 
         public void Initialize(CancellationToken token)
@@ -88,7 +90,9 @@ namespace Sample.CQRS.Portable
 
         public Task Start(CancellationToken token)
         {
-            return new Task(() => { });
+            var start = new Task(() => { IsStarted = true; });
+            start.Start();
+            return start;
         }
     }
 
