@@ -39,7 +39,7 @@
       <HintPath>..\..\s2\Library\NUnit\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="ServiceStack.Text">
-      <HintPath>..\..\s2\Library\ServiceStack\ServiceStack.Text.dll</HintPath>
+      <HintPath>..\Library\ServiceStack\ServiceStack.Text.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -60,6 +60,7 @@
     <Compile Include="Envelope\EnvelopeDispatcherTest.cs" />
     <Compile Include="Envelope\EnvelopeQuarantineTest.cs" />
     <Compile Include="Envelope\EnvelopeStreamerTest.cs" />
+    <Compile Include="RedirectToCommandTest.cs" />
     <Compile Include="TapeStorage\FileAppendOnlyStoreTest.cs" />
     <Compile Include="Partition\FilePartitionInboxTest.cs" />
     <Compile Include="Partition\FileQueueWriterTest.cs" />
