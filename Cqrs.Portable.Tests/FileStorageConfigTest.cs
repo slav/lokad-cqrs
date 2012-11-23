@@ -13,12 +13,20 @@ namespace Cqrs.Portable.Tests
     {
         private FileStorageConfig _config;
         private string _configPath;
+
         [SetUp]
         public void Setup()
         {
             var tmpPath = Path.GetTempPath();
             _configPath = Path.Combine(tmpPath, "lokad-cqrs-test", Guid.NewGuid().ToString());
             _config = new FileStorageConfig(new DirectoryInfo(_configPath), "testaccount");
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            if (Directory.Exists(_configPath))
+                Directory.Delete(_configPath, true);
         }
 
         [Test]
