@@ -10,7 +10,7 @@ namespace Lokad.Cqrs
     /// Helper class that knows how to store arbitrary messages in append-only store
     /// (including envelopes, audit batches etc)
     /// </summary>
-    public class MessageStore 
+    public class MessageStore
     {
         readonly IAppendOnlyStore _appendOnlyStore;
         readonly IMessageSerializer _serializer;
@@ -29,7 +29,7 @@ namespace Lokad.Cqrs
 
         public IEnumerable<StoreRecord> EnumerateMessages(string key, long version, int count)
         {
-            var records = _appendOnlyStore.ReadRecords(key, 0, int.MaxValue);
+            var records = _appendOnlyStore.ReadRecords(key, version, count);
             foreach (var record in records)
             {
                 using (var mem = new MemoryStream(record.Data))
@@ -51,7 +51,7 @@ namespace Lokad.Cqrs
         {
             return _appendOnlyStore.GetCurrentVersion();
         }
-        
+
 
         public IEnumerable<StoreRecord> EnumerateAllItems(long startingFrom, int take)
         {
