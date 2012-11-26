@@ -71,7 +71,7 @@ namespace Cqrs.Portable.Tests
 
         public TestClassWithMethod(int val0)
         {
-            List=new List<string>();
+            List = new List<string>();
             Summa += val0;
             CallMethod1 = false;
         }
@@ -96,11 +96,27 @@ namespace Cqrs.Portable.Tests
         {
             List.Add(param1);
         }
+
+        
     }
 
-    public class TestRedirectMethod
+    public class TestClassWithInterfaceMethod
+    {
+        public void When(TestInterface arg)
+        {
+
+        }
+    }
+
+    public class TestRedirectMethod : TestInterface
     {
         public int Id { get; set; }
         public string Name { get; set; }
+    }
+
+    public interface TestInterface
+    {
+        int Id { get; set; }
+        string Name { get; set; }
     }
 }
