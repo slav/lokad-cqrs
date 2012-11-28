@@ -118,6 +118,10 @@ namespace Lokad.Cqrs.TapeStorage
                 PersistInFile(streamName, data, commit);
                 AddToCaches(streamName, data, commit);
             }
+            catch (AppendOnlyStoreConcurrencyException)
+            {
+                throw;
+            }
             catch
             {
                 Close();
