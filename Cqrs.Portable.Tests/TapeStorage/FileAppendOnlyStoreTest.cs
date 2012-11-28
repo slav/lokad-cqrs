@@ -132,7 +132,7 @@ namespace Cqrs.Portable.Tests.TapeStorage
             }
         }
 
-        [Test]
+        [Test, ExpectedException(typeof(AppendOnlyStoreConcurrencyException))]
         public void append_data_when_set_version_where_does_not_correspond_real_version()
         {
             var key = Guid.NewGuid().ToString();
@@ -141,11 +141,7 @@ namespace Cqrs.Portable.Tests.TapeStorage
             {
                 store.Initialize();
                 store.Append(key, Encoding.UTF8.GetBytes("test message1"), 100);
-
-                var data = store.ReadRecords(key, -1, 2).ToArray();
-                CollectionAssert.IsEmpty(data);
             }
-
         }
 
         [Test]
