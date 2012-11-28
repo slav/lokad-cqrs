@@ -63,6 +63,7 @@
     <Compile Include="Envelope\EnvelopeStreamerTest.cs" />
     <Compile Include="RedirectToCommandTest.cs" />
     <Compile Include="RedirectToDynamicEventTest.cs" />
+    <Compile Include="specification_with_empty_directory.cs" />
     <Compile Include="TapeStorage\FileAppendOnlyStoreTest.cs" />
     <Compile Include="Partition\FilePartitionInboxTest.cs" />
     <Compile Include="Partition\FileQueueWriterTest.cs" />
