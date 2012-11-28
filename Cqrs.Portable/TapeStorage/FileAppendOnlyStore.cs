@@ -120,11 +120,16 @@ namespace Lokad.Cqrs.TapeStorage
             }
             catch (AppendOnlyStoreConcurrencyException)
             {
+                //store is OK when AOSCE is thrown. This is client's problem
+                // just bubble it upwards
                 throw;
             }
             catch
             {
+                // store probably corrupted. Close it and then rethrow exception
+                // so that clien will have a chance to retry.
                 Close();
+                throw;
             }
             finally
             {
