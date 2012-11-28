@@ -17,6 +17,8 @@ namespace Lokad.Cqrs.AppendOnly
         int _bytesWritten;
         int _bytesPending;
         int _fullPagesFlushed;
+        int _persistedPosition;
+       
 
         public AppendOnlyStream(int pageSizeInBytes, AppendWriterDelegate writer, int maxByteCount)
         {
@@ -58,19 +60,22 @@ namespace Lokad.Cqrs.AppendOnly
 
             var fullPagesFlushed = size / _pageSizeInBytes;
 
-            if (fullPagesFlushed <= 0)
-                return;
-
-            // Copy remainder to the new stream and dispose the old stream
-            var newStream = new MemoryStream();
-            _pending.Position = fullPagesFlushed * _pageSizeInBytes;
-            _pending.CopyTo(newStream);
-            _pending.Dispose();
-            _pending = newStream;
+            if (fullPagesFlushed > 0)
+            {
+                // Copy remainder to the new stream and dispose the old stream
+                var newStream = new MemoryStream();
+                _pending.Position = fullPagesFlushed * _pageSizeInBytes;
+                _pending.CopyTo(newStream);
+                _pending.Dispose();
+                _pending = newStream;
+                _bytesPending = 0;
+            }
 
             _fullPagesFlushed += fullPagesFlushed;
-            _bytesPending = 0;
+            _persistedPosition = _fullPagesFlushed * _pageSizeInBytes + (int)_pending.Length;
         }
+
+        public int PersistedPosition { get { return _persistedPosition; } }
 
         public void Dispose()
         {
