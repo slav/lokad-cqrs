@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="AppendOnly\AppendOnlyStreamTest.cs" />
     <Compile Include="AppendOnly\BlobAppendOnlyStoreTest.cs" />
+    <Compile Include="AtomicStorage\AzureDocumentStoreTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -56,6 +57,10 @@
     <ProjectReference Include="..\Cqrs.Portable\Cqrs.Portable.csproj">
       <Project>{4e2e749c-4d6f-4ef8-8e9d-96d467306997}</Project>
       <Name>Cqrs.Portable</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SaaS.Wires\SaaS.Wires.csproj">
+      <Project>{a6870fb6-d70d-4c70-81c8-74c191765fbc}</Project>
+      <Name>SaaS.Wires</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

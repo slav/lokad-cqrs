@@ -1,0 +1,87 @@
+﻿#region (c) 2010-2011 Lokad - CQRS for Windows Azure - New BSD License
+// Copyright (c) Lokad 2010-2011, http://www.lokad.com
+// This code is released as Open Source under the terms of the New BSD Licence
+#endregion
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Lokad.Cqrs.AtomicStorage;
+using Microsoft.WindowsAzure;
+using Microsoft.WindowsAzure.StorageClient;
+using NUnit.Framework;
+using SaaS.Wires;
+using Lokad.Cqrs.AppendOnly;
+
+namespace Cqrs.Azure.Tests.AtomicStorage
+{
+    public class AzureDocumentStoreTest
+    {
+        IDocumentStore _store;
+        string _path;
+        private BlobAppendOnlyStore _appendOnly;
+
+        [SetUp]
+        public void Setup()
+        {
+            _path = Guid.NewGuid().ToString().ToLowerInvariant();
+            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+            var blobCLient = cloudStorageAccount.CreateCloudBlobClient();
+            var blobContainer = blobCLient.GetContainerReference(_path);
+            _appendOnly = new BlobAppendOnlyStore(blobContainer);
+            _appendOnly.InitializeWriter();
+
+            _store = new AzureDocumentStore(new DocumentStrategy(), blobCLient);
+        }
+
+        [Test]
+        public void get_not_created_bucket()
+        {
+            //GIVEN
+            var bucket = Guid.NewGuid().ToString();
+
+            //WHEN
+            CollectionAssert.IsEmpty(_store.EnumerateContents(bucket));
+        }
+
+
+        [Test]
+        public void write_bucket()
+        {
+            //GIVEN
+            var records = new List<DocumentRecord>
+                {
+                    new DocumentRecord("first", () => Encoding.UTF8.GetBytes("test message 1")),
+                    new DocumentRecord("second", () => Encoding.UTF8.GetBytes("test message 2")),
+                };
+            _store.WriteContents(_path, records);
+
+            //WHEN
+            var actualRecords = _store.EnumerateContents(_path).ToList();
+            Assert.AreEqual(records.Count, actualRecords.Count);
+            for (int i = 0; i < records.Count; i++)
+            {
+                Assert.AreEqual(true, actualRecords.Count(x => x.Key == records[i].Key) == 1);
+                Assert.AreEqual(Encoding.UTF8.GetString(records[i].Read()),
+                                Encoding.UTF8.GetString(actualRecords.First(x => x.Key == records[i].Key).Read()));
+            }
+        }
+
+        [Test]
+        public void reset_bucket()
+        {
+            //GIVEN
+            var records = new List<DocumentRecord>
+                {
+                    new DocumentRecord("first", () => Encoding.UTF8.GetBytes("test message 1")),
+                };
+            _store.WriteContents(_path, records);
+            _store.Reset(_path);
+
+            //WHEN
+            var result1 = _store.EnumerateContents(_path).ToList();
+            CollectionAssert.IsEmpty(result1);
+        }
+    }
+}

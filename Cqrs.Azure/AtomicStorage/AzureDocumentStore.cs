@@ -54,11 +54,31 @@ namespace Lokad.Cqrs.AtomicStorage
         {
             var subdir = _client.GetBlobDirectoryReference(bucket);
             var l = subdir.ListBlobs(new BlobRequestOptions {UseFlatBlobListing = true});
+            if (!ContainerExist(subdir.Container))
+                yield break;
+ 
             foreach (var item in l)
             {
                 var blob = subdir.GetBlobReference(item.Uri.ToString());
                 var rel = subdir.Uri.MakeRelativeUri(item.Uri).ToString();
                 yield return new DocumentRecord(rel.Replace('\\', '/'), blob.DownloadByteArray);
+            }
+        }
+
+        bool ContainerExist(CloudBlobContainer container)
+        {
+            try
+            {
+                container.FetchAttributes();
+                return true;
+            }
+            catch (StorageClientException e)
+            {
+                if (e.ErrorCode == StorageErrorCode.ResourceNotFound)
+                {
+                    return false;
+                }
+                throw;
             }
         }
 
