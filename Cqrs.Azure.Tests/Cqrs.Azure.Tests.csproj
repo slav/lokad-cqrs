@@ -30,6 +30,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.WindowsAzure.ServiceRuntime, Version=1.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.WindowsAzure.StorageClient, Version=1.7.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="nunit.framework">
       <HintPath>..\Library\NUnit\nunit.framework.dll</HintPath>
     </Reference>
@@ -43,12 +45,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppendOnly\AppendOnlyStreamTest.cs" />
+    <Compile Include="AppendOnly\BlobAppendOnlyStoreTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cqrs.Azure\Cqrs.Azure.csproj">
       <Project>{aee2b47d-591d-42b5-8edc-cc676a661f9d}</Project>
       <Name>Cqrs.Azure</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Cqrs.Portable\Cqrs.Portable.csproj">
+      <Project>{4e2e749c-4d6f-4ef8-8e9d-96d467306997}</Project>
+      <Name>Cqrs.Portable</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

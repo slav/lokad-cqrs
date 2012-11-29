@@ -94,7 +94,7 @@ namespace Lokad.Cqrs.AppendOnly
         {
             // no lock is needed, since we are polling immutable object.
             DataWithVersion[] list;
-            return _items.TryGetValue(streamName, out list) ? list : Enumerable.Empty<DataWithVersion>();
+            return _items.TryGetValue(streamName, out list) ? list.Skip((int)afterVersion).Take(maxCount) : Enumerable.Empty<DataWithVersion>();
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
