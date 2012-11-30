@@ -57,11 +57,11 @@ namespace SaaS.Wires
             var sendToFunctionalRecorderQueue = new MessageSender(Streamer, QueueWriterFactory(FunctionalRecorderQueueName));
             var sendToEventProcessingQueue = new MessageSender(Streamer, QueueWriterFactory(EventProcessingQueue));
 
-            var sender = new TypedMessageSender(sendToRouterQueue, sendToFunctionalRecorderQueue);
+            var sendSmart = new TypedMessageSender(sendToRouterQueue, sendToFunctionalRecorderQueue);
 
             var store = new EventStore(messageStore);
 
-            var quarantine = new EnvelopeQuarantine(Streamer, sender, Streaming.GetContainer(ErrorsContainerName));
+            var quarantine = new EnvelopeQuarantine(Streamer, sendSmart, Streaming.GetContainer(ErrorsContainerName));
 
             var builder = new CqrsEngineBuilder(Streamer, quarantine);
 
@@ -88,8 +88,8 @@ namespace SaaS.Wires
             // Domain Bounded Context
             DomainBoundedContext.EntityApplicationServices(viewDocs, store,vector).ForEach(commands.WireToWhen);
             DomainBoundedContext.FuncApplicationServices().ForEach(funcs.WireToWhen);
-            DomainBoundedContext.Ports(sender).ForEach(events.WireToWhen);
-            DomainBoundedContext.Tasks(sender, viewDocs, true).ForEach(builder.AddTask);
+            DomainBoundedContext.Ports(sendSmart).ForEach(events.WireToWhen);
+            DomainBoundedContext.Tasks(sendSmart, viewDocs, true).ForEach(builder.AddTask);
             projections.RegisterFactory(DomainBoundedContext.Projections);
 
             // Client Bounded Context
