@@ -138,12 +138,12 @@ namespace Lokad.Cqrs
             return reader;
         }
 
-        public static AzurePartitionInbox CreateInbox(this IAzureStorageConfig cfg, string name,
+        public static AzureQueueReader CreateQueueReader(this IAzureStorageConfig cfg, string name,
             Func<uint, TimeSpan> decay = null, TimeSpan visibilityTimeout = default(TimeSpan))
         {
             var intake = BuildIntake(cfg, name, visibilityTimeout);
             var waiter = decay ?? DecayEvil.BuildExponentialDecay(2000);
-            return new AzurePartitionInbox(new[] {intake}, waiter);
+            return new AzureQueueReader(new[] {intake}, waiter);
         }
 
         

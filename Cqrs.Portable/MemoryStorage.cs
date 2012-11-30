@@ -37,13 +37,13 @@ namespace Lokad.Cqrs
         }
         
 
-        public static MemoryPartitionInbox CreateInbox(this MemoryStorageConfig storageConfig,  params string[] queueNames)
+        public static MemoryQueueReader CreateInbox(this MemoryStorageConfig storageConfig,  params string[] queueNames)
         {
             var queues = queueNames
                 .Select(n => storageConfig.Queues.GetOrAdd(n, s => new BlockingCollection<byte[]>()))
                 .ToArray();
 
-            return new MemoryPartitionInbox(queues, queueNames);
+            return new MemoryQueueReader(queues, queueNames);
         }
 
         public static IQueueWriter CreateQueueWriter(this MemoryStorageConfig storageConfig, string queueName)

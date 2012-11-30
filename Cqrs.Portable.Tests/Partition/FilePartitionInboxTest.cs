@@ -14,7 +14,7 @@ namespace Cqrs.Portable.Tests.Partition
             var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             var queue = new StatelessFileQueueReader(path, "test");
 
-            var inbox = new FilePartitionInbox(new[] { queue }, x => new TimeSpan(x));
+            var inbox = new FileQueueReader(new[] { queue }, x => new TimeSpan(x));
 
             Assert.IsFalse(Directory.Exists(path));
             inbox.InitIfNeeded();
@@ -26,7 +26,7 @@ namespace Cqrs.Portable.Tests.Partition
         {
             var queue1 = InitQueue("test1");
 
-            var inbox = new FilePartitionInbox(new[] { queue1 }, x => new TimeSpan(x));
+            var inbox = new FileQueueReader(new[] { queue1 }, x => new TimeSpan(x));
             inbox.InitIfNeeded();
             MessageTransportContext message1;
             inbox.TakeMessage(new CancellationToken(false), out message1);
@@ -41,7 +41,7 @@ namespace Cqrs.Portable.Tests.Partition
             var queue = new StatelessFileQueueReader(path, name);
             queue.InitIfNeeded();
             using (var sw = new StreamWriter(Path.Combine(path, "0.dat"), false))
-                sw.Write("test message");
+                sw.Write("test queue");
             return queue;
         }
 
@@ -50,7 +50,7 @@ namespace Cqrs.Portable.Tests.Partition
         {
             var queue1 = InitQueue("test1");
 
-            var inbox = new FilePartitionInbox(new[] { queue1 }, x => new TimeSpan(x));
+            var inbox = new FileQueueReader(new[] { queue1 }, x => new TimeSpan(x));
             inbox.InitIfNeeded();
             MessageTransportContext message1;
             inbox.TakeMessage(new CancellationToken(false), out message1);

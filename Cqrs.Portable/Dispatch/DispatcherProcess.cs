@@ -20,9 +20,9 @@ namespace Lokad.Cqrs.Dispatch
     public sealed class DispatcherProcess : IEngineProcess
     {
         readonly Action<byte[]> _dispatcher;
-        readonly IPartitionInbox _inbox;
+        readonly IQueueReader _inbox;
 
-        public DispatcherProcess(Action<byte[]> dispatcher, IPartitionInbox inbox)
+        public DispatcherProcess(Action<byte[]> dispatcher, IQueueReader inbox)
         {
             _dispatcher = dispatcher;
             _inbox = inbox;
@@ -66,7 +66,7 @@ namespace Lokad.Cqrs.Dispatch
                     {
                         if (!_inbox.TakeMessage(source.Token, out context))
                         {
-                            // we didn't retrieve message within the token lifetime.
+                            // we didn't retrieve queue within the token lifetime.
                             // it's time to shutdown the server
                             break;
                         }

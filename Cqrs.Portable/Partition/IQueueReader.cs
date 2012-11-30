@@ -12,7 +12,7 @@ namespace Lokad.Cqrs.Partition
     /// <summary>
     /// Retrieves (waiting if needed) message from one or more queues
     /// </summary>
-    public interface IPartitionInbox
+    public interface IQueueReader
     {
 
         void InitIfNeeded();

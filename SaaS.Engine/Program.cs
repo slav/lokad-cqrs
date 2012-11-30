@@ -73,10 +73,10 @@ namespace SaaS.Engine
 
                 var config = FileStorage.CreateConfig(path);
                 setup.Streaming = config.CreateStreaming();
-                setup.CreateDocs = config.CreateDocumentStore;
-                setup.CreateInbox = s => config.CreateInbox(s, DecayEvil.BuildExponentialDecay(500));
-                setup.CreateQueueWriter = config.CreateQueueWriter;
-                setup.CreateTapes = config.CreateAppendOnlyStore;
+                setup.DocumentStoreFactory = config.CreateDocumentStore;
+                setup.QueueReaderFactory = s => config.CreateInbox(s, DecayEvil.BuildExponentialDecay(500));
+                setup.QueueWriterFactory = config.CreateQueueWriter;
+                setup.AppendOnlyStoreFactory = config.CreateAppendOnlyStore;
 
                 setup.ConfigureQueues(1, 1);
 
@@ -86,10 +86,10 @@ namespace SaaS.Engine
             {
                 var config = AzureStorage.CreateConfig(integrationPath);
                 setup.Streaming = config.CreateStreaming();
-                setup.CreateDocs = config.CreateDocumentStore;
-                setup.CreateInbox = s => config.CreateInbox(s);
-                setup.CreateQueueWriter = config.CreateQueueWriter;
-                setup.CreateTapes = config.CreateAppendOnlyStore;
+                setup.DocumentStoreFactory = config.CreateDocumentStore;
+                setup.QueueReaderFactory = s => config.CreateQueueReader(s);
+                setup.QueueWriterFactory = config.CreateQueueWriter;
+                setup.AppendOnlyStoreFactory = config.CreateAppendOnlyStore;
                 setup.ConfigureQueues(4, 4);
                 return setup.Build();
             }

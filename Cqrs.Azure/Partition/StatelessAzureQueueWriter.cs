@@ -25,10 +25,10 @@ namespace Lokad.Cqrs.Feature.AzurePartition
         {
             if (buffer.Length < AzureMessageOverflows.CloudQueueLimit)
             {
-                // write message to queue
+                // write queue to queue
                 return new CloudQueueMessage(buffer);
             }
-            // ok, we didn't fit, so create reference message
+            // ok, we didn't fit, so create reference queue
             var referenceId = DateTimeOffset.UtcNow.ToString(DateFormatInBlobName) + "-" + Guid.NewGuid().ToString().ToLowerInvariant();
             _cloudBlob.GetBlobReference(referenceId).UploadByteArray(buffer);
             var reference = new EnvelopeReference(_cloudBlob.Uri.ToString(), referenceId);

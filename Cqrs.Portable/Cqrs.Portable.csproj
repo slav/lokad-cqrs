@@ -88,11 +88,11 @@
     <Compile Include="MessageStore.cs" />
     <Compile Include="MessageStorePublisher.cs" />
     <Compile Include="Partition\Events.cs" />
-    <Compile Include="Partition\FilePartitionInbox.cs" />
+    <Compile Include="Partition\FileQueueReader.cs" />
     <Compile Include="Partition\FileQueueWriter.cs" />
-    <Compile Include="Partition\IPartitionInbox.cs" />
+    <Compile Include="Partition\IQueueReader.cs" />
     <Compile Include="Partition\IQueueWriter.cs" />
-    <Compile Include="Partition\MemoryPartitionInbox.cs" />
+    <Compile Include="Partition\MemoryQueueReader.cs" />
     <Compile Include="Partition\MemoryQueueWriter.cs" />
     <Compile Include="Partition\MessageTransportContext.cs" />
     <Compile Include="Partition\StatelessFileQueueReader.cs" />

@@ -11,19 +11,19 @@ using System.Threading;
 namespace Lokad.Cqrs.Partition
 {
     /// <summary>
-    /// In-memory implementation of <see cref="IPartitionInbox"/> that uses concurrency primitives
+    /// In-memory implementation of <see cref="IQueueReader"/> that uses concurrency primitives
     /// </summary>
-    public sealed class MemoryPartitionInbox : IPartitionInbox
+    public sealed class MemoryQueueReader : IQueueReader
     {
         readonly BlockingCollection<byte[]>[] _queues;
         readonly string[] _names;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MemoryPartitionInbox"/> class.
+        /// Initializes a new instance of the <see cref="MemoryQueueReader"/> class.
         /// </summary>
         /// <param name="queues">The queues.</param>
         /// <param name="names">Names for these queues.</param>
-        public MemoryPartitionInbox(BlockingCollection<byte[]>[] queues, string[] names)
+        public MemoryQueueReader(BlockingCollection<byte[]>[] queues, string[] names)
         {
             _queues = queues;
             _names = names;

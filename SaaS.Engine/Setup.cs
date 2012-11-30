@@ -18,9 +18,9 @@ namespace SaaS.Wires
 {
     public sealed class Setup
     {
-        static readonly string FunctionalRecorderQueue = Conventions.FunctionalEventRecorderQueue;
-        static readonly string RouterQueue = Conventions.DefaultRouterQueue;
-        static readonly string ErrorsContainer = Conventions.DefaultErrorsFolder;
+        static readonly string FunctionalRecorderQueueName = Conventions.FunctionalEventRecorderQueue;
+        static readonly string RouterQueueName = Conventions.DefaultRouterQueue;
+        static readonly string ErrorsContainerName = Conventions.DefaultErrorsFolder;
 
         const string EventProcessingQueue = Conventions.Prefix + "-handle-events";
         const string AggregateHandlerQueue = Conventions.Prefix + "-handle-cmd-entity";
@@ -43,25 +43,25 @@ namespace SaaS.Wires
 
         public IStreamRoot Streaming;
 
-        public Func<string, IQueueWriter> CreateQueueWriter;
-        public Func<string, IPartitionInbox> CreateInbox;
-        public Func<string, IAppendOnlyStore> CreateTapes;
-        public Func<IDocumentStrategy, IDocumentStore> CreateDocs;
+        public Func<string, IQueueWriter> QueueWriterFactory;
+        public Func<string, IQueueReader> QueueReaderFactory;
+        public Func<string, IAppendOnlyStore> AppendOnlyStoreFactory;
+        public Func<IDocumentStrategy, IDocumentStore> DocumentStoreFactory;
 
         public Container Build()
         {
-            var appendOnlyStore = CreateTapes(TapesContainer);
+            var appendOnlyStore = AppendOnlyStoreFactory(TapesContainer);
             var messageStore = new MessageStore(appendOnlyStore, Streamer.MessageSerializer);
 
-            var toCommandRouter = new MessageSender(Streamer, CreateQueueWriter(RouterQueue));
-            var toFunctionalRecorder = new MessageSender(Streamer, CreateQueueWriter(FunctionalRecorderQueue));
-            var toEventHandlers = new MessageSender(Streamer, CreateQueueWriter(EventProcessingQueue));
+            var sendToRouterQueue = new MessageSender(Streamer, QueueWriterFactory(RouterQueueName));
+            var sendToFunctionalRecorderQueue = new MessageSender(Streamer, QueueWriterFactory(FunctionalRecorderQueueName));
+            var sendToEventProcessingQueue = new MessageSender(Streamer, QueueWriterFactory(EventProcessingQueue));
 
-            var sender = new TypedMessageSender(toCommandRouter, toFunctionalRecorder);
+            var sender = new TypedMessageSender(sendToRouterQueue, sendToFunctionalRecorderQueue);
 
             var store = new EventStore(messageStore);
 
-            var quarantine = new EnvelopeQuarantine(Streamer, sender, Streaming.GetContainer(ErrorsContainer));
+            var quarantine = new EnvelopeQuarantine(Streamer, sender, Streaming.GetContainer(ErrorsContainerName));
 
             var builder = new CqrsEngineBuilder(Streamer, quarantine);
 
@@ -70,15 +70,15 @@ namespace SaaS.Wires
             var funcs = new RedirectToCommand();
             
 
-            builder.Handle(CreateInbox(EventProcessingQueue), aem => CallHandlers(events, aem), "watch");
-            builder.Handle(CreateInbox(AggregateHandlerQueue), aem => CallHandlers(commands, aem));
-            builder.Handle(CreateInbox(RouterQueue), MakeRouter(messageStore), "watch");
+            builder.Handle(QueueReaderFactory(EventProcessingQueue), aem => CallHandlers(events, aem), "watch");
+            builder.Handle(QueueReaderFactory(AggregateHandlerQueue), aem => CallHandlers(commands, aem));
+            builder.Handle(QueueReaderFactory(RouterQueueName), MakeRouter(messageStore), "watch");
             // multiple service queues
-            _serviceQueues.ForEach(s => builder.Handle(CreateInbox(s), aem => CallHandlers(funcs, aem)));
+            _serviceQueues.ForEach(s => builder.Handle(QueueReaderFactory(s), aem => CallHandlers(funcs, aem)));
 
-            builder.Handle(CreateInbox(FunctionalRecorderQueue), aem => RecordFunctionalEvent(aem, messageStore));
-            var viewDocs = CreateDocs(ViewStrategy);
-            var stateDocs = new NuclearStorage(CreateDocs(DocStrategy));
+            builder.Handle(QueueReaderFactory(FunctionalRecorderQueueName), aem => RecordFunctionalEvent(aem, messageStore));
+            var viewDocs = DocumentStoreFactory(ViewStrategy);
+            var stateDocs = new NuclearStorage(DocumentStoreFactory(DocStrategy));
 
 
 
@@ -99,14 +99,14 @@ namespace SaaS.Wires
             projections.BuildFor(viewDocs).ForEach(events.WireToWhen);
 
             // wire in event store publisher
-            var publisher = new MessageStorePublisher(messageStore, toEventHandlers, stateDocs, DoWePublishThisRecord);
+            var publisher = new MessageStorePublisher(messageStore, sendToEventProcessingQueue, stateDocs, DoWePublishThisRecord);
             builder.AddTask(c => Task.Factory.StartNew(() => publisher.Run(c)));
 
             return new Container
             {
                 Builder = builder,
                 Setup = this,
-                SendToCommandRouter = toCommandRouter,
+                SendToCommandRouter = sendToRouterQueue,
                 MessageStore = messageStore,
                 ProjectionFactories = projections,
                 ViewDocs = viewDocs,
@@ -128,8 +128,8 @@ namespace SaaS.Wires
 
         Action<ImmutableEnvelope> MakeRouter(MessageStore tape)
         {
-            var entities = CreateQueueWriter(AggregateHandlerQueue);
-            var processing = _serviceQueues.Select(CreateQueueWriter).ToArray();
+            var entities = QueueWriterFactory(AggregateHandlerQueue);
+            var processing = _serviceQueues.Select(QueueWriterFactory).ToArray();
             
             return envelope =>
             {
@@ -159,7 +159,7 @@ namespace SaaS.Wires
                     processing[i].PutMessage(data);
                     return;
                 }
-                throw new InvalidOperationException("Unknown message format");
+                throw new InvalidOperationException("Unknown queue format");
             };
         }
 

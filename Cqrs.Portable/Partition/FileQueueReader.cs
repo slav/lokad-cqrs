@@ -1,48 +1,47 @@
-﻿#region (c) 2010-2011 Lokad - CQRS for Windows Azure - New BSD License 
+#region (c) 2010-2011 Lokad CQRS - New BSD License 
 
-// Copyright (c) Lokad 2010-2011, http://www.lokad.com
+// Copyright (c) Lokad SAS 2010-2011 (http://www.lokad.com)
 // This code is released as Open Source under the terms of the New BSD Licence
+// Homepage: http://lokad.github.com/lokad-cqrs/
 
 #endregion
 
 using System;
 using System.Threading;
-using System.Linq;
-using Lokad.Cqrs.Partition;
 
-namespace Lokad.Cqrs.Feature.AzurePartition.Inbox
+namespace Lokad.Cqrs.Partition
 {
     /// <summary>
-    /// Polling implementation of message reciever for Azure queues
+    /// Polling file-based implementation of <see cref="IQueueReader"/>
     /// </summary>
-    public sealed class AzurePartitionInbox : IPartitionInbox
+    public sealed class FileQueueReader : IQueueReader
     {
-        readonly StatelessAzureQueueReader[] _readers;
+        readonly StatelessFileQueueReader[] _readers;
         readonly Func<uint, TimeSpan> _waiter;
         uint _emptyCycles;
 
-        readonly string _name;
-
-        public override string ToString()
-        {
-            return _name;
-        }
-
-        public AzurePartitionInbox(StatelessAzureQueueReader[] readers,
-            Func<uint, TimeSpan> waiter)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FileQueueReader"/> class.
+        /// </summary>
+        /// <param name="readers">Multiple file queue readers.</param>
+        /// <param name="waiter">The waiter function (to slow down polling if there are no messages).</param>
+        public FileQueueReader(StatelessFileQueueReader[] readers, Func<uint, TimeSpan> waiter)
         {
             _readers = readers;
             _waiter = waiter;
-
-            _name = string.Format("Azure Inbox [{0}]", string.Join(",", readers.Select(r => r.Name).ToArray()));
         }
 
 
+        public void Init()
+        {
+         
+        }
+
         public void InitIfNeeded()
         {
-            foreach (var x in _readers)
+            foreach (var info in _readers)
             {
-                x.InitIfNeeded();
+                info.InitIfNeeded();
             }
         }
 
@@ -55,10 +54,6 @@ namespace Lokad.Cqrs.Feature.AzurePartition.Inbox
                     queue.AckMessage(message);
                 }
             }
-        }
-
-        public void TryNotifyNack(MessageTransportContext context)
-        {
         }
 
         public bool TakeMessage(CancellationToken token, out MessageTransportContext context)
@@ -96,5 +91,7 @@ namespace Lokad.Cqrs.Feature.AzurePartition.Inbox
             context = null;
             return false;
         }
+
+        public void TryNotifyNack(MessageTransportContext context) {}
     }
 }

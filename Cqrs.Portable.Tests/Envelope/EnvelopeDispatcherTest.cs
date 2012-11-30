@@ -44,7 +44,7 @@ namespace Cqrs.Portable.Tests.Envelope
             var dublicationMemeory = _duplicationManager.GetOrAdd(_envelopeDispatcher);
             dublicationMemeory.Memorize("EnvId");
 
-            _envelopeDispatcher.Dispatch(Encoding.UTF8.GetBytes("test message"));
+            _envelopeDispatcher.Dispatch(Encoding.UTF8.GetBytes("test queue"));
 
             Assert.IsFalse(ActionCalled);
             Assert.IsFalse(_testEnvelopeQuarantine.CallQuarantineMethod);
@@ -54,7 +54,7 @@ namespace Cqrs.Portable.Tests.Envelope
         public void when_dispatch_call_action_message()
         {
             ActionCalled = false;
-            _envelopeDispatcher.Dispatch(Encoding.UTF8.GetBytes("test message"));
+            _envelopeDispatcher.Dispatch(Encoding.UTF8.GetBytes("test queue"));
             var dublicationMemeory = _duplicationManager.GetOrAdd(_envelopeDispatcher);
 
             Assert.IsTrue(ActionCalled);

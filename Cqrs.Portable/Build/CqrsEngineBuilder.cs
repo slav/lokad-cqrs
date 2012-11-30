@@ -37,14 +37,14 @@ namespace Lokad.Cqrs.Build
             Processes.Add(new TaskProcess(factoryToStartTask));
         }
 
-        public void Dispatch(IPartitionInbox inbox, Action<byte[]> lambda)
+        public void Dispatch(IQueueReader inbox, Action<byte[]> lambda)
         {
             Processes.Add(new DispatcherProcess(lambda, inbox));
         }
 
         static int _counter = 0;
 
-        public void Handle(IPartitionInbox inbox, Action<ImmutableEnvelope> lambda, string name = null)
+        public void Handle(IQueueReader inbox, Action<ImmutableEnvelope> lambda, string name = null)
         {
             var dispatcherName = name ?? "inbox-" + Interlocked.Increment(ref _counter);
             var dispatcher = new EnvelopeDispatcher(lambda, Streamer, Quarantine, Duplication, dispatcherName);

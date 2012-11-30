@@ -53,12 +53,12 @@ namespace Lokad.Cqrs
             return new FileStorageConfig(info, optionalName ?? info.Name);
         }
 
-        public static FilePartitionInbox CreateInbox(this FileStorageConfig cfg, string name, Func<uint, TimeSpan> decay = null)
+        public static FileQueueReader CreateInbox(this FileStorageConfig cfg, string name, Func<uint, TimeSpan> decay = null)
         {
             var reader = new StatelessFileQueueReader(Path.Combine(cfg.FullPath, name), name);
 
             var waiter = decay ?? DecayEvil.BuildExponentialDecay(250);
-            var inbox = new FilePartitionInbox(new[]{reader, }, waiter);
+            var inbox = new FileQueueReader(new[]{reader, }, waiter);
             inbox.Init();
             return inbox;
         }

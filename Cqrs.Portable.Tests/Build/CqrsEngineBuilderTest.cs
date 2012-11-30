@@ -45,7 +45,7 @@ namespace Cqrs.Portable.Tests.Build
         public void when_dispatch()
         {
             var builder = new CqrsEngineBuilder(null);
-            builder.Dispatch(new TestPartitionInbox(), (b) => { });
+            builder.Dispatch(new TestQueueReader(), (b) => { });
 
             Assert.AreEqual(2, builder.Processes.Count);
             Assert.AreEqual(typeof(DispatcherProcess), builder.Processes[1].GetType());
@@ -55,7 +55,7 @@ namespace Cqrs.Portable.Tests.Build
         public void when_handle()
         {
             var builder = new CqrsEngineBuilder(null);
-            builder.Dispatch(new TestPartitionInbox(), (b) => { });
+            builder.Dispatch(new TestQueueReader(), (b) => { });
 
             Assert.AreEqual(2, builder.Processes.Count);
             Assert.AreEqual(typeof(DispatcherProcess), builder.Processes[1].GetType());
@@ -96,7 +96,7 @@ namespace Cqrs.Portable.Tests.Build
         }
     }
 
-    public class TestPartitionInbox : IPartitionInbox
+    public class TestQueueReader : IQueueReader
     {
         public void InitIfNeeded()
         {

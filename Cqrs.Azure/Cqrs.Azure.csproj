@@ -59,7 +59,7 @@
     <Compile Include="AtomicStorage\AzureAtomicReader.cs" />
     <Compile Include="AtomicStorage\AzureDocumentStore.cs" />
     <Compile Include="AzureStorageConfigurationBuilder.cs" />
-    <Compile Include="Partition\AzurePartitionInbox.cs" />
+    <Compile Include="Partition\AzureQueueReader.cs" />
     <Compile Include="Partition\StatelessAzureQueueReader.cs" />
     <Compile Include="IAzureStorageConfig.cs" />
     <Compile Include="StreamingStorage\BlobStreamingContainer.cs" />
