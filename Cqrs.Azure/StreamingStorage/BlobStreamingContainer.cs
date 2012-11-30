@@ -80,7 +80,7 @@ namespace Lokad.Cqrs.Feature.StreamingStorage
         {
             try
             {
-                if (_directory.Uri == _directory.Container.Uri)
+                if (_directory.Uri.ToString().Trim('/') == _directory.Container.Uri.ToString().Trim('/'))
                 {
                     _directory.Container.Delete();
                 }

@@ -14,29 +14,10 @@ using NUnit.Framework;
 
 namespace Cqrs.Azure.Tests.AppendOnly
 {
-    public class BlobAppendOnlyStoreTest
+    public class BlobAppendOnlyStoreTest : BaseTestClass
     {
-        string _path;
         private const int DataFileCount = 10;
         private const int FileMessagesCount = 5;
-        private BlobAppendOnlyStore _appendOnly;
-
-        [SetUp]
-        public void Setup()
-        {
-            _path = Guid.NewGuid().ToString().ToLowerInvariant();
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
-            var blobCLient = cloudStorageAccount.CreateCloudBlobClient();
-            var blobContainer = blobCLient.GetContainerReference(_path);
-            _appendOnly = new BlobAppendOnlyStore(blobContainer);
-            _appendOnly.InitializeWriter();
-        }
-
-        [TearDown]
-        public void Teardown()
-        {
-            _appendOnly.Close();
-        }
 
         [Test]
         public void when_append_and_read()
@@ -131,7 +112,7 @@ namespace Cqrs.Azure.Tests.AppendOnly
             }
             CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
             var blobCLient = cloudStorageAccount.CreateCloudBlobClient();
-            var blobContainer = blobCLient.GetContainerReference(_path);
+            var blobContainer = blobCLient.GetContainerReference(name);
             _appendOnly = new BlobAppendOnlyStore(blobContainer);
             _appendOnly.InitializeWriter();
         }

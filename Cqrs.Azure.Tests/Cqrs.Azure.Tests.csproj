@@ -49,9 +49,11 @@
     <Compile Include="AppendOnly\BlobAppendOnlyStoreTest.cs" />
     <Compile Include="AtomicStorage\AzureAtomicWriterAndReaderTest.cs" />
     <Compile Include="AtomicStorage\AzureDocumentStoreTest.cs" />
+    <Compile Include="BaseTestClass.cs" />
     <Compile Include="Partition\AzureMessageOverflowsTest.cs" />
     <Compile Include="Partition\AzureQueueWriteReadTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StreamingStorage\BlobStreamingContainerTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cqrs.Azure\Cqrs.Azure.csproj">
@@ -61,6 +63,10 @@
     <ProjectReference Include="..\Cqrs.Portable\Cqrs.Portable.csproj">
       <Project>{4e2e749c-4d6f-4ef8-8e9d-96d467306997}</Project>
       <Name>Cqrs.Portable</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SaaS.Contracts\SaaS.Contracts.csproj">
+      <Project>{2a4a9a2c-5d8d-4078-b118-02a1d386a9fa}</Project>
+      <Name>SaaS.Contracts</Name>
     </ProjectReference>
     <ProjectReference Include="..\SaaS.Wires\SaaS.Wires.csproj">
       <Project>{a6870fb6-d70d-4c70-81c8-74c191765fbc}</Project>

@@ -16,25 +16,8 @@ using Lokad.Cqrs.AppendOnly;
 
 namespace Cqrs.Azure.Tests.AtomicStorage
 {
-    public class AzureDocumentStoreTest
+    public class AzureDocumentStoreTest : BaseTestClass
     {
-        IDocumentStore _store;
-        string _path;
-        private BlobAppendOnlyStore _appendOnly;
-
-        [SetUp]
-        public void Setup()
-        {
-            _path = Guid.NewGuid().ToString().ToLowerInvariant();
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
-            var blobCLient = cloudStorageAccount.CreateCloudBlobClient();
-            var blobContainer = blobCLient.GetContainerReference(_path);
-            _appendOnly = new BlobAppendOnlyStore(blobContainer);
-            _appendOnly.InitializeWriter();
-
-            _store = new AzureDocumentStore(new DocumentStrategy(), blobCLient);
-        }
-
         [Test]
         public void when_get_not_created_bucket()
         {
@@ -55,10 +38,10 @@ namespace Cqrs.Azure.Tests.AtomicStorage
                     new DocumentRecord("first", () => Encoding.UTF8.GetBytes("test message 1")),
                     new DocumentRecord("second", () => Encoding.UTF8.GetBytes("test message 2")),
                 };
-            _store.WriteContents(_path, records);
+            _store.WriteContents(name, records);
 
             //WHEN
-            var actualRecords = _store.EnumerateContents(_path).ToList();
+            var actualRecords = _store.EnumerateContents(name).ToList();
             Assert.AreEqual(records.Count, actualRecords.Count);
             for (int i = 0; i < records.Count; i++)
             {
@@ -76,11 +59,11 @@ namespace Cqrs.Azure.Tests.AtomicStorage
                 {
                     new DocumentRecord("first", () => Encoding.UTF8.GetBytes("test message 1")),
                 };
-            _store.WriteContents(_path, records);
-            _store.Reset(_path);
+            _store.WriteContents(name, records);
+            _store.Reset(name);
 
             //WHEN
-            var result1 = _store.EnumerateContents(_path).ToList();
+            var result1 = _store.EnumerateContents(name).ToList();
             CollectionAssert.IsEmpty(result1);
         }
 

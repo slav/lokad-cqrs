@@ -14,32 +14,8 @@ using SaaS.Wires;
 
 namespace Cqrs.Azure.Tests.AtomicStorage
 {
-    public class AzureAtomicWriterAndReaderTest
+    public class AzureAtomicWriterAndReaderTest : BaseTestClass
     {
-        IDocumentStore _store;
-        private AzureAtomicWriter<Guid, TestView> _writer;
-        private DocumentStrategy _documentStrategy;
-        private AzureAtomicReader<Guid, TestView> _reader;
-
-        [SetUp]
-        public void Setup()
-        {
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
-            var blobCLient = cloudStorageAccount.CreateCloudBlobClient();
-
-            _documentStrategy = new DocumentStrategy();
-            _store = new AzureDocumentStore(_documentStrategy, blobCLient);
-            _writer = new AzureAtomicWriter<Guid, TestView>(blobCLient, _documentStrategy);
-            _reader = new AzureAtomicReader<Guid, TestView>(blobCLient, _documentStrategy);
-        }
-
-        [TearDown]
-        public void Teardown()
-        {
-            var bucket = _documentStrategy.GetEntityBucket<TestView>();
-            _store.Reset(bucket);
-        }
-
         [Test]
         public void when_delete_than_not_key()
         {
