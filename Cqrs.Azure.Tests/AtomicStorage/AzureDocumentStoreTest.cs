@@ -36,7 +36,7 @@ namespace Cqrs.Azure.Tests.AtomicStorage
         }
 
         [Test]
-        public void get_not_created_bucket()
+        public void when_get_not_created_bucket()
         {
             //GIVEN
             var bucket = Guid.NewGuid().ToString();
@@ -47,7 +47,7 @@ namespace Cqrs.Azure.Tests.AtomicStorage
 
 
         [Test]
-        public void write_bucket()
+        public void when_write_bucket()
         {
             //GIVEN
             var records = new List<DocumentRecord>
@@ -69,7 +69,7 @@ namespace Cqrs.Azure.Tests.AtomicStorage
         }
 
         [Test]
-        public void reset_bucket()
+        public void when_reset_bucket()
         {
             //GIVEN
             var records = new List<DocumentRecord>
@@ -82,6 +82,32 @@ namespace Cqrs.Azure.Tests.AtomicStorage
             //WHEN
             var result1 = _store.EnumerateContents(_path).ToList();
             CollectionAssert.IsEmpty(result1);
+        }
+
+        [Test]
+        public void when_read_exist_entity()
+        {
+            var writer = _store.GetWriter<Guid, TestView>();
+            var reader = _store.GetReader<Guid, TestView>();
+            Guid key = Guid.NewGuid();
+            var entity = writer.Add(key, new TestView(key));
+            TestView savedView;
+            var result = reader.TryGet(key, out savedView);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(key, entity.Id);
+            Assert.AreEqual(key, savedView.Id);
+        }
+
+        [Test]
+        public void when_read_nothing_entity()
+        {
+            var reader = _store.GetReader<Guid, TestView>();
+            Guid key = Guid.NewGuid();
+            TestView savedView;
+            var result = reader.TryGet(key, out savedView);
+
+            Assert.IsFalse(result);
         }
     }
 }
