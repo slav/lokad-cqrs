@@ -47,6 +47,7 @@ namespace Lokad.Cqrs.Partition
 
         public void AckMessage(MessageTransportContext message)
         {
+            if (message == null) throw new ArgumentNullException("message");
             foreach (var queue in _readers)
             {
                 if (queue.Name == message.QueueName)

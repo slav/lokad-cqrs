@@ -21,6 +21,16 @@ namespace Cqrs.Portable.Tests.Partition
             Assert.IsTrue(Directory.Exists(path));
         }
 
+        [Test, ExpectedException(typeof(ArgumentNullException))]
+        public void when_ack_null_message()
+        {
+            var queue1 = InitQueue("test1");
+
+            var inbox = new FileQueueReader(new[] { queue1 }, x => new TimeSpan(x));
+            inbox.InitIfNeeded();
+            inbox.AckMessage(null);
+        }
+
         [Test]
         public void when_ack_messages_by_name()
         {
