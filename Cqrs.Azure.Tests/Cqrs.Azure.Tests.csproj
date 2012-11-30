@@ -50,7 +50,7 @@
     <Compile Include="AtomicStorage\AzureAtomicWriterAndReaderTest.cs" />
     <Compile Include="AtomicStorage\AzureDocumentStoreTest.cs" />
     <Compile Include="Partition\AzureMessageOverflowsTest.cs" />
-    <Compile Include="Partition\AzureQueueReaderTest.cs" />
+    <Compile Include="Partition\AzureQueueWriteReadTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
