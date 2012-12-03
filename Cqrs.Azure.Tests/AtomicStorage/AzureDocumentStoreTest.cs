@@ -11,13 +11,40 @@ using Lokad.Cqrs.AtomicStorage;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
 using NUnit.Framework;
+using SaaS;
 using SaaS.Wires;
-using Lokad.Cqrs.AppendOnly;
 
 namespace Cqrs.Azure.Tests.AtomicStorage
 {
-    public class AzureDocumentStoreTest : BaseTestClass
+    public class AzureDocumentStoreTest
     {
+        IDocumentStore _store;
+        readonly string name = Guid.NewGuid().ToString().ToLowerInvariant();
+        private CloudBlobContainer _container;
+        private CloudBlobContainer _sampleDocContainer;
+
+        [SetUp]
+        public void Setup()
+        {
+            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+            var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
+            var documentStrategy = new DocumentStrategy();
+            _store = new AzureDocumentStore(documentStrategy, cloudBlobClient);
+
+            _container = cloudBlobClient.GetBlobDirectoryReference(name).Container;
+            _container.CreateIfNotExist();
+
+            _sampleDocContainer = cloudBlobClient.GetBlobDirectoryReference(Conventions.DocsFolder).Container;
+            _sampleDocContainer.CreateIfNotExist();
+        }
+
+        [TearDown]
+        public void Teardown()
+        {
+            _container.Delete();
+            _sampleDocContainer.Delete();
+        }
+
         [Test]
         public void when_get_not_created_bucket()
         {

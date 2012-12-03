@@ -15,8 +15,45 @@ using NUnit.Framework;
 
 namespace Cqrs.Azure.Tests.Partition
 {
-    public class AzureQueueWriteReadTest : BaseTestClass
+    public class AzureQueueWriteReadTest
     {
+        StatelessAzureQueueReader _statelessReader;
+        AzureQueueReader _queueReader;
+        StatelessAzureQueueWriter _queueWriter;
+        string name = Guid.NewGuid().ToString().ToLowerInvariant();
+        private CloudBlobClient _cloudBlobClient;
+        private CloudBlobContainer _blobContainer;
+
+
+        [SetUp]
+        public void Setup()
+        {
+            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+
+            _cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
+            var queue = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference(name);
+            var container = _cloudBlobClient.GetBlobDirectoryReference(name);
+
+            _blobContainer = _cloudBlobClient.GetContainerReference(name);
+            var poisonQueue = new Lazy<CloudQueue>(() =>
+            {
+                var queueReference = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference(name + "-poison");
+                queueReference.CreateIfNotExist();
+                return queueReference;
+            }, LazyThreadSafetyMode.ExecutionAndPublication);
+            _statelessReader = new StatelessAzureQueueReader("azure-read-write-message", queue, container, poisonQueue, TimeSpan.FromMinutes(1));
+            _queueReader = new AzureQueueReader(new[] { _statelessReader }, x => TimeSpan.FromMinutes(x));
+            _queueWriter = new StatelessAzureQueueWriter(_blobContainer, queue, "azure-read-write-message");
+            _queueWriter.Init();
+        }
+
+
+        [TearDown]
+        public void Teardown()
+        {
+            _blobContainer.Delete();
+        }
+
         [Test, ExpectedException(typeof(NullReferenceException))]
         public void when_put_null_message()
         {
@@ -49,7 +86,7 @@ namespace Cqrs.Azure.Tests.Partition
             var transportContext = new MessageTransportContext(
                 msg.Message.TransportMessage
                 , msg.Message.Unpacked
-                ,msg.Message.QueueName);
+                , msg.Message.QueueName);
             _statelessReader.AckMessage(transportContext);
             var msg2 = _statelessReader.TryGetMessage();
 
@@ -80,7 +117,7 @@ namespace Cqrs.Azure.Tests.Partition
             MessageTransportContext msg;
             var cancellationToken = new CancellationToken(false);
             var result = _queueReader.TakeMessage(cancellationToken, out msg);
-            
+
             Assert.IsTrue(result);
             Assert.AreEqual("message", Encoding.UTF8.GetString(msg.Unpacked));
             Assert.AreEqual("azure-read-write-message", msg.QueueName);

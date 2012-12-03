@@ -55,7 +55,6 @@
     <Compile Include="AppendOnly\BlobAppendOnlyStoreTest.cs" />
     <Compile Include="AtomicStorage\AzureAtomicWriterAndReaderTest.cs" />
     <Compile Include="AtomicStorage\AzureDocumentStoreTest.cs" />
-    <Compile Include="BaseTestClass.cs" />
     <Compile Include="Partition\AzureMessageOverflowsTest.cs" />
     <Compile Include="Partition\AzureQueueWriteReadTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

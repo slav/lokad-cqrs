@@ -5,7 +5,6 @@
 
 using System;
 using System.Runtime.Serialization;
-using Lokad.Cqrs.AppendOnly;
 using Lokad.Cqrs.AtomicStorage;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
@@ -14,8 +13,24 @@ using SaaS.Wires;
 
 namespace Cqrs.Azure.Tests.AtomicStorage
 {
-    public class AzureAtomicWriterAndReaderTest : BaseTestClass
+    public class AzureAtomicWriterAndReaderTest 
     {
+        AzureAtomicWriter<Guid, TestView> _writer;
+        DocumentStrategy _documentStrategy;
+        AzureAtomicReader<Guid, TestView> _reader;
+         CloudBlobClient _cloudBlobClient;
+
+        [SetUp]
+        public void Setup()
+        {
+            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+
+            _cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
+            _documentStrategy = new DocumentStrategy();
+            _writer = new AzureAtomicWriter<Guid, TestView>(_cloudBlobClient, _documentStrategy);
+            _reader = new AzureAtomicReader<Guid, TestView>(_cloudBlobClient, _documentStrategy);
+        }
+
         [Test]
         public void when_delete_than_not_key()
         {
