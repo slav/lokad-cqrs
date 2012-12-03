@@ -3,18 +3,27 @@
 // This code is released as Open Source under the terms of the New BSD Licence
 #endregion
 
+using System;
 using Microsoft.WindowsAzure;
 
 namespace Cqrs.Azure.Tests
 {
     public static class ConnectionConfig
     {
+        public static CloudStorageAccount GetAzureConnnectionString()
+        {
+            if (Environment.GetEnvironmentVariable("env.Data_Store") != null)
+                return CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("env.Data_Store"));
+
+            return CloudStorageAccount.DevelopmentStorageAccount;
+        }
+
+        static readonly Lazy<CloudStorageAccount> Connection = new Lazy<CloudStorageAccount>(GetAzureConnnectionString);
+
+
         public static CloudStorageAccount StorageAccount
         {
-            get
-            {
-                return CloudStorageAccount.DevelopmentStorageAccount;
-            }
+            get { return Connection.Value; }
         }
     }
 }
