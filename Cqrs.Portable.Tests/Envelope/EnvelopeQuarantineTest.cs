@@ -1,6 +1,5 @@
 ﻿using Lokad.Cqrs;
 using NUnit.Framework;
-using SaaS.Wires;
 
 namespace Cqrs.Portable.Tests.Envelope
 {

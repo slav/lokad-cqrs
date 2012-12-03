@@ -11,8 +11,6 @@ using Lokad.Cqrs.AtomicStorage;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
 using NUnit.Framework;
-using SaaS;
-using SaaS.Wires;
 
 namespace Cqrs.Azure.Tests.AtomicStorage
 {
@@ -34,7 +32,7 @@ namespace Cqrs.Azure.Tests.AtomicStorage
             _container = cloudBlobClient.GetBlobDirectoryReference(name).Container;
             _container.CreateIfNotExist();
 
-            _sampleDocContainer = cloudBlobClient.GetBlobDirectoryReference(Conventions.DocsFolder).Container;
+            _sampleDocContainer = cloudBlobClient.GetBlobDirectoryReference("sample-doc").Container;
             _sampleDocContainer.CreateIfNotExist();
         }
 

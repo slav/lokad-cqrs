@@ -13,7 +13,6 @@ using Lokad.Cqrs.StreamingStorage;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
 using NUnit.Framework;
-using SaaS.Wires;
 
 namespace Cqrs.Azure.Tests.StreamingStorage
 {

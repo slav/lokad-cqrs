@@ -5,7 +5,6 @@ using System.Runtime.Serialization;
 using Lokad.Cqrs;
 using Lokad.Cqrs.AtomicStorage;
 using NUnit.Framework;
-using SaaS.Wires;
 
 namespace Cqrs.Portable.Tests.AtomicStorage
 {

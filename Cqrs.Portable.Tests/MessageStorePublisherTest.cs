@@ -6,7 +6,6 @@ using Lokad.Cqrs.AtomicStorage;
 using Lokad.Cqrs.Envelope;
 using Lokad.Cqrs.TapeStorage;
 using NUnit.Framework;
-using SaaS.Wires;
 
 namespace Cqrs.Portable.Tests
 {

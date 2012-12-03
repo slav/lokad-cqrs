@@ -4,7 +4,6 @@ using Lokad.Cqrs;
 using Lokad.Cqrs.Envelope;
 using Lokad.Cqrs.Partition;
 using NUnit.Framework;
-using SaaS;
 
 namespace Cqrs.Portable.Tests.Envelope
 {

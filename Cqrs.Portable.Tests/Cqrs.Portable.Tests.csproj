@@ -39,6 +39,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Library\NUnit\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="protobuf-net, Version=2.0.0.470, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Library\ProtoBuf-net\protobuf-net.dll</HintPath>
+    </Reference>
     <Reference Include="ServiceStack.Text">
       <HintPath>..\Library\ServiceStack\ServiceStack.Text.dll</HintPath>
     </Reference>
@@ -56,6 +60,7 @@
     <Compile Include="Build\CqrsEngineHostTest.cs" />
     <Compile Include="AtomicStorage\DocumentReaderWriterTest.cs" />
     <Compile Include="AtomicStorage\DocumentStoreTest.cs" />
+    <Compile Include="Contracts.cs" />
     <Compile Include="Envelope\DuplicationManagerTest.cs" />
     <Compile Include="Envelope\DuplicationMemoryTest.cs" />
     <Compile Include="Envelope\EnvelopeDispatcherTest.cs" />
@@ -83,14 +88,6 @@
     <ProjectReference Include="..\Cqrs.Portable\Cqrs.Portable.csproj">
       <Project>{4e2e749c-4d6f-4ef8-8e9d-96d467306997}</Project>
       <Name>Cqrs.Portable</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SaaS.Contracts\SaaS.Contracts.csproj">
-      <Project>{2a4a9a2c-5d8d-4078-b118-02a1d386a9fa}</Project>
-      <Name>SaaS.Contracts</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SaaS.Wires\SaaS.Wires.csproj">
-      <Project>{a6870fb6-d70d-4c70-81c8-74c191765fbc}</Project>
-      <Name>SaaS.Wires</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
