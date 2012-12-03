@@ -17,19 +17,20 @@ namespace Cqrs.Azure.Tests.AtomicStorage
     public class AzureDocumentStoreTest
     {
         IDocumentStore _store;
-        readonly string name = Guid.NewGuid().ToString().ToLowerInvariant();
+        string _name;
         private CloudBlobContainer _container;
         private CloudBlobContainer _sampleDocContainer;
 
         [SetUp]
         public void Setup()
         {
+            _name = Guid.NewGuid().ToString().ToLowerInvariant();
             CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
             var documentStrategy = new DocumentStrategy();
             _store = new AzureDocumentStore(documentStrategy, cloudBlobClient);
 
-            _container = cloudBlobClient.GetBlobDirectoryReference(name).Container;
+            _container = cloudBlobClient.GetBlobDirectoryReference(_name).Container;
             _container.CreateIfNotExist();
 
             _sampleDocContainer = cloudBlobClient.GetBlobDirectoryReference("sample-doc").Container;
@@ -63,10 +64,10 @@ namespace Cqrs.Azure.Tests.AtomicStorage
                     new DocumentRecord("first", () => Encoding.UTF8.GetBytes("test message 1")),
                     new DocumentRecord("second", () => Encoding.UTF8.GetBytes("test message 2")),
                 };
-            _store.WriteContents(name, records);
+            _store.WriteContents(_name, records);
 
             //WHEN
-            var actualRecords = _store.EnumerateContents(name).ToList();
+            var actualRecords = _store.EnumerateContents(_name).ToList();
             Assert.AreEqual(records.Count, actualRecords.Count);
             for (int i = 0; i < records.Count; i++)
             {
@@ -84,11 +85,11 @@ namespace Cqrs.Azure.Tests.AtomicStorage
                 {
                     new DocumentRecord("first", () => Encoding.UTF8.GetBytes("test message 1")),
                 };
-            _store.WriteContents(name, records);
-            _store.Reset(name);
+            _store.WriteContents(_name, records);
+            _store.Reset(_name);
 
             //WHEN
-            var result1 = _store.EnumerateContents(name).ToList();
+            var result1 = _store.EnumerateContents(_name).ToList();
             CollectionAssert.IsEmpty(result1);
         }
 

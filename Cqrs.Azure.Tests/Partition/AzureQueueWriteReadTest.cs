@@ -20,7 +20,7 @@ namespace Cqrs.Azure.Tests.Partition
         StatelessAzureQueueReader _statelessReader;
         AzureQueueReader _queueReader;
         StatelessAzureQueueWriter _queueWriter;
-        string name = Guid.NewGuid().ToString().ToLowerInvariant();
+        string _name;
         private CloudBlobClient _cloudBlobClient;
         private CloudBlobContainer _blobContainer;
 
@@ -28,16 +28,17 @@ namespace Cqrs.Azure.Tests.Partition
         [SetUp]
         public void Setup()
         {
+            _name = Guid.NewGuid().ToString().ToLowerInvariant();
             CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
 
             _cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            var queue = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference(name);
-            var container = _cloudBlobClient.GetBlobDirectoryReference(name);
+            var queue = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference(_name);
+            var container = _cloudBlobClient.GetBlobDirectoryReference(_name);
 
-            _blobContainer = _cloudBlobClient.GetContainerReference(name);
+            _blobContainer = _cloudBlobClient.GetContainerReference(_name);
             var poisonQueue = new Lazy<CloudQueue>(() =>
             {
-                var queueReference = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference(name + "-poison");
+                var queueReference = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference(_name + "-poison");
                 queueReference.CreateIfNotExist();
                 return queueReference;
             }, LazyThreadSafetyMode.ExecutionAndPublication);

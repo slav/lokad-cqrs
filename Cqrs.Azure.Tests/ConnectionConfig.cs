@@ -12,6 +12,11 @@ namespace Cqrs.Azure.Tests
     {
         public static CloudStorageAccount GetAzureConnnectionString()
         {
+            return
+                CloudStorageAccount.Parse(
+                    "DefaultEndpointsProtocol=https;AccountName=ufabuild;AccountKey=feJnJ6Qf2UDnlQ9swV313V0RMLH9BjSFoWKtCfh8ggxV7l4QOfCG97OavW/K1c/MyUsY2nudUSiE/kskzohy3g==");
+
+            Console.WriteLine("DATA_STORE: " + Environment.GetEnvironmentVariable("Data_Store"));
             if (Environment.GetEnvironmentVariable("Data_Store") != null)
                 return CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("Data_Store"));
 

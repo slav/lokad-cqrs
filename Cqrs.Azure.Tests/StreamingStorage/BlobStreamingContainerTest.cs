@@ -18,12 +18,13 @@ namespace Cqrs.Azure.Tests.StreamingStorage
 {
     public class BlobStreamingContainerTest
     {
-        readonly string name = Guid.NewGuid().ToString().ToLowerInvariant();
+        string name;
         BlobStreamingContainer _streamContainer;
 
         [SetUp]
         public void Setup()
         {
+            name = Guid.NewGuid().ToString().ToLowerInvariant();
             CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
 
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
