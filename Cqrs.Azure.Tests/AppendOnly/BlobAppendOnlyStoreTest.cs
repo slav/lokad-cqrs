@@ -20,15 +20,16 @@ namespace Cqrs.Azure.Tests.AppendOnly
         private const int DataFileCount = 10;
         private const int FileMessagesCount = 5;
         BlobAppendOnlyStore _appendOnly;
-        readonly string name = Guid.NewGuid().ToString().ToLowerInvariant();
         private CloudBlobContainer _blobContainer;
+        private string _name;
 
         [SetUp]
         public void Setup()
         {
+            _name = Guid.NewGuid().ToString().ToLowerInvariant();
             CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            _blobContainer = cloudBlobClient.GetContainerReference(name);
+            _blobContainer = cloudBlobClient.GetContainerReference(_name);
 
             _appendOnly = new BlobAppendOnlyStore(_blobContainer);
             _appendOnly.InitializeWriter();
@@ -135,7 +136,7 @@ namespace Cqrs.Azure.Tests.AppendOnly
             }
             CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var blobCLient = cloudStorageAccount.CreateCloudBlobClient();
-            var blobContainer = blobCLient.GetContainerReference(name);
+            var blobContainer = blobCLient.GetContainerReference(_name);
             _appendOnly = new BlobAppendOnlyStore(blobContainer);
             _appendOnly.InitializeWriter();
         }
