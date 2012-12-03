@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Lokad.Cqrs.AppendOnly;
 using NUnit.Framework;
 
@@ -41,6 +42,7 @@ namespace Cqrs.Azure.Tests.AppendOnly
         [Test]
         public void when_bytes_more_than_maximum()
         {
+            Console.WriteLine("starting when_bytes_more_than_maximum");
             var result = _appendOnlyStore.Fits(101);
 
             Assert.IsFalse(result);
