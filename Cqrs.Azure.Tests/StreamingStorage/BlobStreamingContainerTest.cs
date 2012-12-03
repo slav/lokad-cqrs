@@ -25,7 +25,7 @@ namespace Cqrs.Azure.Tests.StreamingStorage
         [SetUp]
         public void Setup()
         {
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
 
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
             var container = cloudBlobClient.GetBlobDirectoryReference(name);
@@ -43,7 +43,7 @@ namespace Cqrs.Azure.Tests.StreamingStorage
         [Test]
         public void when_not_created_container()
         {
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var streamContainer = new BlobStreamingContainer(
                 cloudStorageAccount.CreateCloudBlobClient().GetBlobDirectoryReference("blob-streaming-directory-nothing"));
 
@@ -144,7 +144,7 @@ namespace Cqrs.Azure.Tests.StreamingStorage
         [Test, ExpectedException(typeof(StreamContainerNotFoundException))]
         public void when_nothing_blob_items()
         {
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var streamContainer = new BlobStreamingContainer(
                 cloudStorageAccount.CreateCloudBlobClient().GetBlobDirectoryReference("blob-streaming-directory-nothing"));
 
@@ -172,7 +172,7 @@ namespace Cqrs.Azure.Tests.StreamingStorage
         [Test, ExpectedException(typeof(StreamContainerNotFoundException))]
         public void when_nothing_blob_detail_items()
         {
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var streamContainer = new BlobStreamingContainer(
                 cloudStorageAccount.CreateCloudBlobClient().GetBlobDirectoryReference("blob-streaming-directory-nothing"));
 

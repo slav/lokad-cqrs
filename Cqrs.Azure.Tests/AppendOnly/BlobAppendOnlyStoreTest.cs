@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using Lokad.Cqrs;
 using Lokad.Cqrs.AppendOnly;
 using Lokad.Cqrs.TapeStorage;
 using Microsoft.WindowsAzure;
@@ -25,11 +26,10 @@ namespace Cqrs.Azure.Tests.AppendOnly
         [SetUp]
         public void Setup()
         {
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
-
+            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
             _blobContainer = cloudBlobClient.GetContainerReference(name);
-            
+
             _appendOnly = new BlobAppendOnlyStore(_blobContainer);
             _appendOnly.InitializeWriter();
         }
@@ -133,7 +133,7 @@ namespace Cqrs.Azure.Tests.AppendOnly
                     _appendOnly.Append("test-key" + index, Encoding.UTF8.GetBytes(msg + i));
                 }
             }
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var blobCLient = cloudStorageAccount.CreateCloudBlobClient();
             var blobContainer = blobCLient.GetContainerReference(name);
             _appendOnly = new BlobAppendOnlyStore(blobContainer);

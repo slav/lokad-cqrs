@@ -28,7 +28,7 @@ namespace Cqrs.Azure.Tests.Partition
         [SetUp]
         public void Setup()
         {
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
 
             _cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
             var queue = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference(name);

@@ -26,7 +26,7 @@ namespace Cqrs.Azure.Tests.AtomicStorage
         [SetUp]
         public void Setup()
         {
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
             var documentStrategy = new DocumentStrategy();
             _store = new AzureDocumentStore(documentStrategy, cloudBlobClient);
