@@ -16,82 +16,88 @@ using NUnit.Framework;
 
 namespace Cqrs.Azure.Tests
 {
-    public class AzureStorageConfigTest
-    {
-        private IAzureStorageConfig _azureDevStorageConfig;
-        private IAzureStorageConfig _azureStorageConfig;
+    //public class AzureStorageConfigTest
+    //{
+    //    private IAzureStorageConfig _azureDevStorageConfig;
+    //    private IAzureStorageConfig _azureStorageConfig;
 
-        [SetUp]
-        public void SetUp()
-        {
-            CloudStorageAccount account = ConnectionConfig.StorageAccount;
-            _azureDevStorageConfig = AzureStorage.CreateConfigurationForDev();
-            _azureStorageConfig = AzureStorage.CreateConfig(account);
-        }
+    //    [SetUp]
+    //    public void SetUp()
+    //    {
+    //        CloudStorageAccount account = ConnectionConfig.StorageAccount;
+    //        _azureDevStorageConfig = AzureStorage.CreateConfigurationForDev();
+    //        _azureStorageConfig = AzureStorage.CreateConfig(account);
+    //    }
 
-        [Test]
-        public void when_dev_account_name()
-        {
-            Assert.AreEqual("azure-dev", _azureDevStorageConfig.AccountName);
-        }
+    //    [TearDown]
+    //    public void Teardown()
+    //    {
+            
+    //    }
 
-        [Test]
-        public void when_account_name()
-        {
-            Assert.AreEqual("devstoreaccount1", _azureStorageConfig.AccountName);
-        }
+    //    [Test]
+    //    public void when_dev_account_name()
+    //    {
+    //        Assert.AreEqual("azure-dev", _azureDevStorageConfig.AccountName);
+    //    }
 
-        [Test]
-        public void when_create_queue_client()
-        {
+    //    [Test]
+    //    public void when_account_name()
+    //    {
+    //        Assert.AreEqual("devstoreaccount1", _azureStorageConfig.AccountName);
+    //    }
 
-        }
+    //    [Test]
+    //    public void when_create_queue_client()
+    //    {
 
-        [Test]
-        public void when_create_queue_writer_reader()
-        {
-            var writer = _azureStorageConfig.CreateQueueWriter("queue-name");
-            var reader = _azureStorageConfig.CreateQueueReader("queue-name");
-            writer.Init();
-            writer.PutMessage(Encoding.UTF8.GetBytes("test"));
+    //    }
 
-            reader.InitIfNeeded();
-            MessageTransportContext context;
-            reader.TakeMessage(new CancellationToken(false), out context);
+    //    [Test]
+    //    public void when_create_queue_writer_reader()
+    //    {
+    //        var writer = _azureStorageConfig.CreateQueueWriter("queue-name");
+    //        var reader = _azureStorageConfig.CreateQueueReader("queue-name");
+    //        writer.Init();
+    //        writer.PutMessage(Encoding.UTF8.GetBytes("test"));
 
-            Assert.AreEqual("queue-name", context.QueueName);
-            Assert.AreEqual("test", Encoding.UTF8.GetString(context.Unpacked));
-        }
+    //        reader.InitIfNeeded();
+    //        MessageTransportContext context;
+    //        reader.TakeMessage(new CancellationToken(false), out context);
 
-        [Test]
-        public void when_create_append_only_store()
-        {
-            var appendOnlyStore = _azureStorageConfig.CreateAppendOnlyStore("append-only");
-            var version = appendOnlyStore.GetCurrentVersion();
-            appendOnlyStore.Append("stream1", Encoding.UTF8.GetBytes("test"));
+    //        Assert.AreEqual("queue-name", context.QueueName);
+    //        Assert.AreEqual("test", Encoding.UTF8.GetString(context.Unpacked));
+    //    }
 
-            var records = appendOnlyStore.ReadRecords("stream1", version, Int32.MaxValue).ToArray();
+    //    [Test]
+    //    public void when_create_append_only_store()
+    //    {
+    //        var appendOnlyStore = _azureStorageConfig.CreateAppendOnlyStore("append-only");
+    //        var version = appendOnlyStore.GetCurrentVersion();
+    //        appendOnlyStore.Append("stream1", Encoding.UTF8.GetBytes("test"));
 
-            Assert.AreEqual(1, records.Length);
-            Assert.AreEqual("test", Encoding.UTF8.GetString(records[0].Data));
-        }
+    //        var records = appendOnlyStore.ReadRecords("stream1", version, Int32.MaxValue).ToArray();
 
-        [Test]
-        public void when_create_message_sender()
-        {
-            var testEnvelopeStreamer = new TestEnvelopeStreamer();
-            var sender = _azureStorageConfig.CreateMessageSender(testEnvelopeStreamer, "name");
-            sender.Send("test message");
-            var reader = _azureStorageConfig.CreateQueueReader("name");
-            MessageTransportContext context;
-            reader.TakeMessage(new CancellationToken(false), out context);
+    //        Assert.AreEqual(1, records.Length);
+    //        Assert.AreEqual("test", Encoding.UTF8.GetString(records[0].Data));
+    //    }
 
-            Assert.AreEqual("name", context.QueueName);
-            CollectionAssert.AreEquivalent(new byte[] { 1, 2, 3 }, context.Unpacked);
-            CollectionAssert.AreEquivalent(new byte[] { 1, 2, 3 }, testEnvelopeStreamer.Buffer);
-            Assert.AreEqual("test message", testEnvelopeStreamer.Envelope.Message.ToString());
-        }
-    }
+    //    [Test]
+    //    public void when_create_message_sender()
+    //    {
+    //        var testEnvelopeStreamer = new TestEnvelopeStreamer();
+    //        var sender = _azureStorageConfig.CreateMessageSender(testEnvelopeStreamer, "name");
+    //        sender.Send("test message");
+    //        var reader = _azureStorageConfig.CreateQueueReader("name");
+    //        MessageTransportContext context;
+    //        reader.TakeMessage(new CancellationToken(false), out context);
+
+    //        Assert.AreEqual("name", context.QueueName);
+    //        CollectionAssert.AreEquivalent(new byte[] { 1, 2, 3 }, context.Unpacked);
+    //        CollectionAssert.AreEquivalent(new byte[] { 1, 2, 3 }, testEnvelopeStreamer.Buffer);
+    //        Assert.AreEqual("test message", testEnvelopeStreamer.Envelope.Message.ToString());
+    //    }
+    //}
 
     public class TestEnvelopeStreamer : IEnvelopeStreamer
     {
