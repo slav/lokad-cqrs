@@ -17,22 +17,33 @@ using ProtoBuf;
 
 namespace Cqrs.Azure.Tests.AtomicStorage
 {
-    public class AzureAtomicWriterAndReaderTest 
+    public class AzureAtomicWriterAndReaderTest
     {
         AzureAtomicWriter<Guid, TestView> _writer;
         DocumentStrategy _documentStrategy;
         AzureAtomicReader<Guid, TestView> _reader;
-         CloudBlobClient _cloudBlobClient;
+        CloudBlobClient _cloudBlobClient;
+        string name;
+        private bool _container;
+        private CloudBlobContainer _cloudBlobContainer;
 
         [SetUp]
         public void Setup()
         {
             CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
-
+            name = Guid.NewGuid().ToString().ToLowerInvariant();
             _cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            _documentStrategy = new DocumentStrategy();
+           _cloudBlobContainer = _cloudBlobClient.GetBlobDirectoryReference(name).Container;
+            _cloudBlobContainer.CreateIfNotExist();
+            _documentStrategy = new DocumentStrategy(name);
             _writer = new AzureAtomicWriter<Guid, TestView>(_cloudBlobClient, _documentStrategy);
             _reader = new AzureAtomicReader<Guid, TestView>(_cloudBlobClient, _documentStrategy);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _cloudBlobContainer.Delete();
         }
 
         [Test]
@@ -136,6 +147,13 @@ namespace Cqrs.Azure.Tests.AtomicStorage
 
     public sealed class DocumentStrategy : IDocumentStrategy
     {
+        private string _uniqName;
+
+        public DocumentStrategy(string uniqName)
+        {
+            _uniqName = uniqName;
+        }
+
         public void Serialize<TEntity>(TEntity entity, Stream stream)
         {
             // ProtoBuf must have non-zero files
@@ -155,7 +173,7 @@ namespace Cqrs.Azure.Tests.AtomicStorage
 
         public string GetEntityBucket<TEntity>()
         {
-            return "sample-doc" + "/" + NameCache<TEntity>.Name;
+            return _uniqName + "/" + NameCache<TEntity>.Name;
         }
 
         public string GetEntityLocation<TEntity>(object key)

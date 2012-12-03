@@ -27,13 +27,13 @@ namespace Cqrs.Azure.Tests.AtomicStorage
             _name = Guid.NewGuid().ToString().ToLowerInvariant();
             CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            var documentStrategy = new DocumentStrategy();
+            var documentStrategy = new DocumentStrategy(_name);
             _store = new AzureDocumentStore(documentStrategy, cloudBlobClient);
 
             _container = cloudBlobClient.GetBlobDirectoryReference(_name).Container;
             _container.CreateIfNotExist();
 
-            _sampleDocContainer = cloudBlobClient.GetBlobDirectoryReference("sample-doc").Container;
+            _sampleDocContainer = cloudBlobClient.GetBlobDirectoryReference(_name).Container;
             _sampleDocContainer.CreateIfNotExist();
         }
 
