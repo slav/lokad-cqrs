@@ -12,8 +12,8 @@ namespace Cqrs.Azure.Tests
     {
         public static CloudStorageAccount GetAzureConnnectionString()
         {
-            if (Environment.GetEnvironmentVariable("env.Data_Store") != null)
-                return CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("env.Data_Store"));
+            if (Environment.GetEnvironmentVariable("Data_Store") != null)
+                return CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("Data_Store"));
 
             return CloudStorageAccount.DevelopmentStorageAccount;
         }
