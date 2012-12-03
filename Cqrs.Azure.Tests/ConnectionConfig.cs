@@ -14,7 +14,6 @@ namespace Cqrs.Azure.Tests
             get
             {
                 return CloudStorageAccount.DevelopmentStorageAccount;
-                //CloudStorageAccount.FromConfigurationSetting()
             }
         }
     }
