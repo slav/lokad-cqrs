@@ -158,5 +158,37 @@ namespace Cqrs.Azure.Tests.AppendOnly
                 }
             }
         }
+
+        [Test]
+        public void when_reset_store()
+        {
+            var stream = Guid.NewGuid().ToString();
+
+            for (int i = 0; i < 10; i++)
+                _appendOnly.Append(stream, Encoding.UTF8.GetBytes("test message" + i));
+
+            var version = _appendOnly.GetCurrentVersion();
+            _appendOnly.ResetStore();
+            var versionAfterReset = _appendOnly.GetCurrentVersion();
+
+            Assert.GreaterOrEqual(10, version);
+            Assert.AreEqual(0, versionAfterReset);
+        }
+
+        [Test]
+        public void when_append_after_reset_store()
+        {
+            var stream = Guid.NewGuid().ToString();
+
+            for (int i = 0; i < 10; i++)
+                _appendOnly.Append(stream, Encoding.UTF8.GetBytes("test message" + i));
+            _appendOnly.ResetStore();
+            for (int i = 0; i < 10; i++)
+                _appendOnly.Append(stream, Encoding.UTF8.GetBytes("test message" + i));
+
+            var version = _appendOnly.GetCurrentVersion();
+
+            Assert.GreaterOrEqual(10, version);
+        } 
     }
 }

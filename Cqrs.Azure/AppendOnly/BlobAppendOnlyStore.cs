@@ -28,7 +28,7 @@ namespace Lokad.Cqrs.AppendOnly
         /// </summary>
         readonly ReaderWriterLockSlim _cacheLock = new ReaderWriterLockSlim();
 
-        
+
         bool _closed;
 
         /// <summary>
@@ -99,8 +99,14 @@ namespace Lokad.Cqrs.AppendOnly
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
         {
+            if (afterVersion < 0)
+                throw new ArgumentOutOfRangeException("afterVersion", "Must be zero or greater.");
+
+            if (maxCount <= 0)
+                throw new ArgumentOutOfRangeException("maxCount", "Must be more than zero.");
+
             // collection is immutable so we don't care about locks
-            return _all.Skip((int) afterVersion).Take(maxCount);
+            return _all.Skip((int)afterVersion).Take(maxCount);
         }
 
         public void Close()
@@ -113,6 +119,27 @@ namespace Lokad.Cqrs.AppendOnly
             var tmp = _currentWriter;
             _currentWriter = null;
             tmp.Dispose();
+        }
+
+        public void ResetStore()
+        {
+            // should be locked
+            try
+            {
+                _cacheLock.EnterWriteLock();
+                Close();
+                _all = new DataWithKey[0];
+                foreach (KeyValuePair<string, DataWithVersion[]> dataWithVersionse in _items)
+                {
+                    var blob = _container.GetPageBlobReference(dataWithVersionse.Key);
+                    blob.DeleteIfExists();
+                }
+                _items.Clear();
+            }
+            finally
+            {
+                _cacheLock.ExitWriteLock();
+            }
         }
 
         public long GetCurrentVersion()
@@ -166,7 +193,7 @@ namespace Lokad.Cqrs.AppendOnly
             var storeVersion = _all.Length + 1;
             var record = new DataWithVersion(commit, buffer, storeVersion);
             _all = AddToNewArray(_all, new DataWithKey(key, buffer, commit, storeVersion));
-            _items.AddOrUpdate(key, s => new[] {record}, (s, records) => AddToNewArray(records, record));
+            _items.AddOrUpdate(key, s => new[] { record }, (s, records) => AddToNewArray(records, record));
         }
 
         static T[] AddToNewArray<T>(T[] source, T item)

@@ -60,7 +60,7 @@ namespace Lokad.Cqrs.TapeStorage
             IList<DataWithVersion> bytes;
             if (_dict.TryGetValue(streamName, out bytes))
             {
-                foreach (var bytese in bytes.Where(r => r.StreamVersion > afterVersion).Take(maxCount))
+                foreach (var bytese in bytes.Skip((int)afterVersion).Take(maxCount))
                 {
                     yield return bytese;
                 }
@@ -75,6 +75,12 @@ namespace Lokad.Cqrs.TapeStorage
         public void Close()
         {
             
+        }
+
+        public void ResetStore()
+        {
+            _dict.Clear();
+            _all.Clear();
         }
 
         public long GetCurrentVersion()

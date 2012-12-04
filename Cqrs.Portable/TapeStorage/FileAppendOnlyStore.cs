@@ -14,9 +14,9 @@ namespace Lokad.Cqrs.TapeStorage
     public class FileAppendOnlyStore : IAppendOnlyStore
     {
         readonly DirectoryInfo _info;
-        
+
         // used to synchronize access between threads within a process
-        
+
         readonly ReaderWriterLockSlim _thread = new ReaderWriterLockSlim();
         // used to prevent writer access to store to other processes
         FileStream _lock;
@@ -28,13 +28,14 @@ namespace Lokad.Cqrs.TapeStorage
 
         public void Initialize()
         {
+            _info.Refresh();
             if (!_info.Exists)
                 _info.Create();
             // grab the ownership
-            _lock = new FileStream(Path.Combine(_info.FullName, "lock"), 
-                FileMode.OpenOrCreate, 
-                FileAccess.ReadWrite, 
-                FileShare.None, 
+            _lock = new FileStream(Path.Combine(_info.FullName, "lock"),
+                FileMode.OpenOrCreate,
+                FileAccess.ReadWrite,
+                FileShare.None,
                 8,
                 FileOptions.DeleteOnClose);
 
@@ -51,7 +52,7 @@ namespace Lokad.Cqrs.TapeStorage
                 {
                     AddToCaches(record.Name, record.Bytes, record.Stamp);
                 }
-                
+
             }
             finally
             {
@@ -78,7 +79,7 @@ namespace Lokad.Cqrs.TapeStorage
                 using (var reader = fileInfo.OpenRead())
                 {
                     StorageFrameDecoded result;
-                    while (StorageFramesEvil.TryReadFrame(reader,out result))
+                    while (StorageFramesEvil.TryReadFrame(reader, out result))
                     {
                         yield return result;
                     }
@@ -158,7 +159,7 @@ namespace Lokad.Cqrs.TapeStorage
             var storeVersion = _cacheFull.Length + 1;
             var record = new DataWithVersion(commit, buffer, storeVersion);
             _cacheFull = ImmutableAdd(_cacheFull, new DataWithKey(key, buffer, commit, storeVersion));
-            _cacheByKey.AddOrUpdate(key, s => new[] {record}, (s, records) => ImmutableAdd(records, record));
+            _cacheByKey.AddOrUpdate(key, s => new[] { record }, (s, records) => ImmutableAdd(records, record));
         }
 
         static T[] ImmutableAdd<T>(T[] source, T item)
@@ -167,21 +168,27 @@ namespace Lokad.Cqrs.TapeStorage
             Array.Copy(source, copy, source.Length);
             copy[source.Length] = item;
             return copy;
-        } 
+        }
 
         public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
         {
+            if (afterVersion < 0)
+                throw new ArgumentOutOfRangeException("afterVersion", "Must be zero or greater.");
+
+            if (maxCount <= 0)
+                throw new ArgumentOutOfRangeException("maxCount", "Must be more than zero.");
+
             // no lock is needed.
             DataWithVersion[] list;
             var result = _cacheByKey.TryGetValue(streamName, out list) ? list : Enumerable.Empty<DataWithVersion>();
 
-            return result.Where(x => x.StoreVersion > afterVersion).Take(maxCount);
+            return result.Skip((int)afterVersion).Take(maxCount); 
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
         {
             // collection is immutable so we don't care about locks
-            return _cacheFull.Skip((int) afterVersion).Take(maxCount);
+            return _cacheFull.Skip((int)afterVersion).Take(maxCount);
         }
 
         bool _closed;
@@ -191,11 +198,21 @@ namespace Lokad.Cqrs.TapeStorage
             using (_lock)
             using (_currentWriter)
             {
+                _currentWriter = null;
                 _closed = true;
             }
         }
 
-        
+        public void ResetStore()
+        {
+            Close();
+            Directory.Delete(_info.FullName, true);
+            _cacheFull = new DataWithKey[0];
+            _cacheByKey.Clear();
+            Initialize();
+        }
+
+
         public long GetCurrentVersion()
         {
             return _cacheFull.Length;

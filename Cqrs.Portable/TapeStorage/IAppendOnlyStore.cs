@@ -35,7 +35,7 @@ namespace Lokad.Cqrs.TapeStorage
         IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount); 
 
         void Close();
-
+        void ResetStore();
         long GetCurrentVersion();
     }
 
