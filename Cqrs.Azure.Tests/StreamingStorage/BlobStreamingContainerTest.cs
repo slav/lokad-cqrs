@@ -5,9 +5,6 @@
 
 using System;
 using System.Linq;
-using Cqrs.Azure.Tests.AtomicStorage;
-using Lokad.Cqrs.AppendOnly;
-using Lokad.Cqrs.AtomicStorage;
 using Lokad.Cqrs.Feature.StreamingStorage;
 using Lokad.Cqrs.StreamingStorage;
 using Microsoft.WindowsAzure;
@@ -18,17 +15,17 @@ namespace Cqrs.Azure.Tests.StreamingStorage
 {
     public class BlobStreamingContainerTest
     {
-        string name;
+        string _name;
         BlobStreamingContainer _streamContainer;
 
         [SetUp]
         public void Setup()
         {
-            name = Guid.NewGuid().ToString().ToLowerInvariant();
+            _name = Guid.NewGuid().ToString().ToLowerInvariant();
             CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
 
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            var container = cloudBlobClient.GetBlobDirectoryReference(name);
+            var container = cloudBlobClient.GetBlobDirectoryReference(_name);
             _streamContainer = new BlobStreamingContainer(container);
             _streamContainer.Create();
         }
