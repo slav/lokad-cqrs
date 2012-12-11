@@ -125,13 +125,4 @@ namespace Cqrs.Portable.Tests.Envelope
             Envelope = envelope;
         }
     }
-
-    public class TestCommand : ICommand
-    { }
-
-    public class TestFuncCommand : IFuncCommand
-    { }
-
-    public class TestFuncEvent : IFuncEvent
-    { }
 }
