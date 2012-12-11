@@ -261,5 +261,23 @@ namespace Cqrs.Portable.Tests.TapeStorage
 
             Assert.GreaterOrEqual(10, version);
         }
+
+        [Test]
+        public void when_more_call_reset()
+        {
+            var stream = Guid.NewGuid().ToString();
+
+            _store.Initialize();
+            for (int i = 0; i < 10; i++)
+                _store.Append(stream, Encoding.UTF8.GetBytes("test message" + i));
+            _store.ResetStore();
+            _store.ResetStore();
+            for (int i = 0; i < 10; i++)
+                _store.Append(stream, Encoding.UTF8.GetBytes("test message" + i));
+
+            var version = _store.GetCurrentVersion();
+
+            Assert.GreaterOrEqual(10, version);
+        }
     }
 }

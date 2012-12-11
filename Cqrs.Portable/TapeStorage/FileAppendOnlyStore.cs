@@ -182,7 +182,7 @@ namespace Lokad.Cqrs.TapeStorage
             DataWithVersion[] list;
             var result = _cacheByKey.TryGetValue(streamName, out list) ? list : Enumerable.Empty<DataWithVersion>();
 
-            return result.Skip((int)afterVersion).Take(maxCount); 
+            return result.Skip((int)afterVersion).Take(maxCount);
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)

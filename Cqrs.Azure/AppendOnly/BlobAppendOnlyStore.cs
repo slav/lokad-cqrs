@@ -60,12 +60,9 @@ namespace Lokad.Cqrs.AppendOnly
 
         public void Append(string streamName, byte[] data, long expectedStreamVersion = -1)
         {
-
-            // should be locked
+            _cacheLock.EnterWriteLock();
             try
             {
-                _cacheLock.EnterWriteLock();
-
                 var list = _items.GetOrAdd(streamName, s => new DataWithVersion[0]);
                 if (expectedStreamVersion >= 0)
                 {
@@ -123,15 +120,14 @@ namespace Lokad.Cqrs.AppendOnly
 
         public void ResetStore()
         {
-            // should be locked
+            _cacheLock.EnterWriteLock();
             try
             {
-                _cacheLock.EnterWriteLock();
                 Close();
                 _all = new DataWithKey[0];
-                foreach (KeyValuePair<string, DataWithVersion[]> dataWithVersionse in _items)
+                foreach (var item in _items)
                 {
-                    var blob = _container.GetPageBlobReference(dataWithVersionse.Key);
+                    var blob = _container.GetPageBlobReference(item.Key);
                     blob.DeleteIfExists();
                 }
                 _items.Clear();
