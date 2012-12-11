@@ -58,17 +58,17 @@ namespace Cqrs.Portable.Tests
             Assert.AreEqual("msg3", (records[0].Items[2] as SerializerTest1).Name);
         }
 
-        //todo need to fix the implementation to use MaxCount and Version
-        //[Test]
-        //public void when_enumerate_messages_with_max_count()
-        //{
-        //    var records = _store.EnumerateMessages("stream3", 0, 2).ToArray();
+        [Test]
+        public void when_enumerate_messages_with_max_count()
+        {
+            var records = _store.EnumerateMessages("stream3", 0, 2).ToArray();
 
-        //    Assert.AreEqual(1, records.Length);
-        //    Assert.AreEqual(2, records[0].Items.Length);
-        //    Assert.AreEqual("msg1", (records[0].Items[0] as SerializerTest1).Name);
-        //    Assert.AreEqual("msg2", (records[0].Items[1] as SerializerTest1).Name);
-        //}
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual(3, records[0].Items.Length);
+            Assert.AreEqual("msg1", (records[0].Items[0] as SerializerTest1).Name);
+            Assert.AreEqual("msg2", (records[0].Items[1] as SerializerTest1).Name);
+            Assert.AreEqual("msg3", (records[0].Items[2] as SerializerTest1).Name);
+        }
 
         [Test]
         public void when_get_version()
@@ -104,15 +104,12 @@ namespace Cqrs.Portable.Tests
         public void when_append_to_store()
         {
             var store = new MessageStore(_appendOnlyStore, _serializer);
-            store.AppendToStore("stream5", MessageAttribute.Empty, -1, new[] { "msg1", "msg2", "msg3" });
+            store.AppendToStore("stream5", MessageAttribute.Empty, -1, new[] { new SerializerTest1 { Name = "name1" } });
             var records = store.EnumerateMessages("stream5", 0, Int32.MaxValue).ToArray();
 
             Assert.AreEqual(1, records.Length);
-            Assert.AreEqual(3, records[0].Items.Length);
-            //todo simple types are not properly deserialize
-            //Assert.AreEqual("msg1", records[0].Items[0].ToString());
-            //Assert.AreEqual("msg2", records[0].Items[1].ToString());
-            //Assert.AreEqual("msg3", records[0].Items[2].ToString());
+            Assert.AreEqual(1, records[0].Items.Length);
+            Assert.AreEqual("name1", (records[0].Items[0] as SerializerTest1).Name);
         }
     }
 }
