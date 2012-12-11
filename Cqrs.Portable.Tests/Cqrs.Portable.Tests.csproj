@@ -60,7 +60,6 @@
     <Compile Include="Envelope\DuplicationManagerTest.cs" />
     <Compile Include="Envelope\DuplicationMemoryTest.cs" />
     <Compile Include="Envelope\EnvelopeDispatcherTest.cs" />
-    <Compile Include="Envelope\EnvelopeQuarantineTest.cs" />
     <Compile Include="Envelope\EnvelopeStreamerTest.cs" />
     <Compile Include="RedirectToCommandTest.cs" />
     <Compile Include="RedirectToDynamicEventTest.cs" />

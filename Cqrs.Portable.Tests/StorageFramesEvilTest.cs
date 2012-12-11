@@ -12,7 +12,6 @@ namespace Cqrs.Portable.Tests
         [Test]
         public void read_write_frame()
         {
-            //GIVEN
             string msg = "test message";
 
             Stream stream = new MemoryStream();
@@ -20,7 +19,6 @@ namespace Cqrs.Portable.Tests
             stream.Seek(0, SeekOrigin.Begin);
             var decoded = StorageFramesEvil.ReadFrame(stream);
 
-            //WHEN
             Assert.AreEqual("test-key", decoded.Name);
             Assert.AreEqual(555, decoded.Stamp);
             Assert.AreEqual(msg, Encoding.UTF8.GetString(decoded.Bytes));
@@ -29,12 +27,10 @@ namespace Cqrs.Portable.Tests
         [Test]
         public void read_empty_frame()
         {
-            //GIVEN
             Stream stream = new MemoryStream();
             StorageFrameDecoded decoded;
             var isreadFrame = StorageFramesEvil.TryReadFrame(stream, out decoded);
 
-            //WHEN
             Assert.IsFalse(isreadFrame);
         }
 
@@ -42,7 +38,7 @@ namespace Cqrs.Portable.Tests
         public void async_read_write_more_frame()
         {
             //GIVEN
-            string msg = "test message";
+            const string msg = "test message";
             var path = Path.Combine(Path.GetTempPath(), "lokad-cqrs", Guid.NewGuid() + ".pb");
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             const int maxIndex = 100;
@@ -58,7 +54,7 @@ namespace Cqrs.Portable.Tests
                                        });
 
 
-            //WHEN
+            //THEN
             int index = 0;
             var readTask = Task.Factory.StartNew(() =>
               {
