@@ -48,6 +48,10 @@ namespace Lokad.Cqrs.TapeStorage
             {
                 _thread.EnterWriteLock();
                 _cacheFull = new DataWithKey[0];
+
+                // [abdullin]: known performance problem identified by Nicolas Mehlei
+                // creating new immutable array on each line will kill performance
+                // We need to at least do some batching here
                 foreach (var record in EnumerateHistory())
                 {
                     AddToCaches(record.Name, record.Bytes, record.Stamp);
