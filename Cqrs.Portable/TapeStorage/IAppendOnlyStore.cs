@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.Serialization;
 
 namespace Lokad.Cqrs.TapeStorage
@@ -51,6 +52,33 @@ namespace Lokad.Cqrs.TapeStorage
             Data = data;
             StoreVersion = storeVersion;
         }
+
+        public byte[] ToBinary()
+        {
+            using (var mem = new MemoryStream())
+            using (var bin = new BinaryWriter(mem))
+            {
+                bin.Write(StreamVersion);
+                bin.Write(Data.Length);
+                bin.Write(Data);
+                bin.Write(StoreVersion);
+                return mem.ToArray();
+            }
+        }
+
+        public static DataWithVersion TryGetFromBinary(byte[] source)
+        {
+            using (var mem = new MemoryStream(source))
+            using (var bin = new BinaryReader(mem))
+            {
+                var streamVersion = bin.ReadInt64();
+                var dataLength = bin.ReadInt32();
+                var data = bin.ReadBytes(dataLength);
+                var storeVersion = bin.ReadInt64();
+
+                return new DataWithVersion(streamVersion, data, storeVersion);
+            }
+        }
     }
     public sealed class DataWithKey
     {
@@ -65,6 +93,35 @@ namespace Lokad.Cqrs.TapeStorage
             Data = data;
             StreamVersion = streamVersion;
             StoreVersion = storeVersion;
+        }
+
+        public byte[] ToBinary()
+        {
+            using (var mem = new MemoryStream())
+            using (var bin = new BinaryWriter(mem))
+            {
+                bin.Write(Key);
+                bin.Write(StreamVersion);
+                bin.Write(Data.Length);
+                bin.Write(Data);
+                bin.Write(StoreVersion);
+                return mem.ToArray();
+            }
+        }
+
+        public static DataWithKey TryGetFromBinary(byte[] source)
+        {
+            using (var mem = new MemoryStream(source))
+            using (var bin = new BinaryReader(mem))
+            {
+                var key = bin.ReadString();
+                var streamVersion = bin.ReadInt64();
+                var dataLength = bin.ReadInt32();
+                var data = bin.ReadBytes(dataLength);
+                var storeVersion = bin.ReadInt64();
+
+                return new DataWithKey(key, data, streamVersion, storeVersion);
+            }
         }
     }
 
