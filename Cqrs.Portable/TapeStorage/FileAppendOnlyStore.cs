@@ -158,6 +158,8 @@ namespace Lokad.Cqrs.TapeStorage
             _currentWriter = File.OpenWrite(Path.Combine(_info.FullName, fileName));
         }
 
+        
+
         void AddToCaches(string key, byte[] buffer, long commit)
         {
             var storeVersion = _cacheFull.Length + 1;
@@ -166,11 +168,13 @@ namespace Lokad.Cqrs.TapeStorage
             _cacheByKey.AddOrUpdate(key, s => new[] { record }, (s, records) => ImmutableAdd(records, record));
         }
 
-        static T[] ImmutableAdd<T>(T[] source, T item)
+        static T[] ImmutableAdd<T>(T[] source, params T[] items)
         {
-            var copy = new T[source.Length + 1];
-            Array.Copy(source, copy, source.Length);
-            copy[source.Length] = item;
+            var copy = new T[source.Length + items.Length];
+            
+            Array.Copy(source, 0, copy, 0, source.Length);
+            Array.Copy(items, 0, copy, source.Length, copy.Length);
+            
             return copy;
         }
 
