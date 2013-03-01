@@ -61,6 +61,7 @@
     <Compile Include="Envelope\DuplicationMemoryTest.cs" />
     <Compile Include="Envelope\EnvelopeDispatcherTest.cs" />
     <Compile Include="Envelope\EnvelopeStreamerTest.cs" />
+    <Compile Include="Performance_test_for_LockingInMemoryCache.cs" />
     <Compile Include="RedirectToCommandTest.cs" />
     <Compile Include="RedirectToDynamicEventTest.cs" />
     <Compile Include="specification_with_empty_directory.cs" />

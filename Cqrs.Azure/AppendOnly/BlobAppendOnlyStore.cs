@@ -20,13 +20,8 @@ namespace Lokad.Cqrs.AppendOnly
     {
         // Caches
         readonly CloudBlobContainer _container;
-        readonly ConcurrentDictionary<string, DataWithVersion[]> _items = new ConcurrentDictionary<string, DataWithVersion[]>();
-        DataWithKey[] _all = new DataWithKey[0];
 
-        /// <summary>
-        /// Used to synchronize access between multiple threads within one process
-        /// </summary>
-        readonly ReaderWriterLockSlim _cacheLock = new ReaderWriterLockSlim();
+        readonly LockingInMemoryCache _cache = new LockingInMemoryCache();
 
 
         bool _closed;
@@ -58,52 +53,46 @@ namespace Lokad.Cqrs.AppendOnly
             LoadCaches();
         }
 
+        long _storeVersion = 0;
+
         public void Append(string streamName, byte[] data, long expectedStreamVersion = -1)
         {
-            _cacheLock.EnterWriteLock();
+            // should be locked
             try
             {
-                var list = _items.GetOrAdd(streamName, s => new DataWithVersion[0]);
-                if (expectedStreamVersion >= 0)
+                _cache.Append(streamName, data, _storeVersion + 1, streamVersion =>
                 {
-                    if (list.Length != expectedStreamVersion)
-                        throw new AppendOnlyStoreConcurrencyException(expectedStreamVersion, list.Length, streamName);
-                }
+                    EnsureWriterExists(_storeVersion);
+                    Persist(streamName, data, streamVersion);
+                }, expectedStreamVersion);
 
-                EnsureWriterExists(_all.Length);
-                long commit = list.Length + 1;
+                _storeVersion += 1;
 
-                Persist(streamName, data, commit);
-                AddToCaches(streamName, data, commit);
+            }
+            catch (AppendOnlyStoreConcurrencyException)
+            {
+                //store is OK when AOSCE is thrown. This is client's problem
+                // just bubble it upwards
+                throw;
             }
             catch
             {
+                // store probably corrupted. Close it and then rethrow exception
+                // so that clien will have a chance to retry.
                 Close();
                 throw;
-            }
-            finally
-            {
-                _cacheLock.ExitWriteLock();
             }
         }
 
         public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
         {
-            // no lock is needed, since we are polling immutable object.
-            DataWithVersion[] list;
-            return _items.TryGetValue(streamName, out list) ? list.Skip((int)afterVersion).Take(maxCount) : Enumerable.Empty<DataWithVersion>();
+            return _cache.ReadRecords(streamName, afterVersion, maxCount);
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
         {
-            if (afterVersion < 0)
-                throw new ArgumentOutOfRangeException("afterVersion", "Must be zero or greater.");
+            return _cache.ReadRecords(afterVersion, maxCount);
 
-            if (maxCount <= 0)
-                throw new ArgumentOutOfRangeException("maxCount", "Must be more than zero.");
-
-            // collection is immutable so we don't care about locks
-            return _all.Skip((int)afterVersion).Take(maxCount);
         }
 
         public void Close()
@@ -120,27 +109,16 @@ namespace Lokad.Cqrs.AppendOnly
 
         public void ResetStore()
         {
-            _cacheLock.EnterWriteLock();
-            try
-            {
-                Close();
-                _all = new DataWithKey[0];
-                foreach (var item in _items)
-                {
-                    var blob = _container.GetPageBlobReference(item.Key);
-                    blob.DeleteIfExists();
-                }
-                _items.Clear();
-            }
-            finally
-            {
-                _cacheLock.ExitWriteLock();
-            }
+            Close();
+            _cache.Clear(() => _container.ListBlobs()
+                                         .OfType<CloudPageBlob>()
+                                         .Where(item => item.Uri.ToString().EndsWith(".dat"))
+                                         .AsParallel().ForAll(i => i.DeleteIfExists()));
         }
 
         public long GetCurrentVersion()
         {
-            return _all.Length;
+            return _storeVersion;
         }
 
         IEnumerable<StorageFrameDecoded> EnumerateHistory()
@@ -169,35 +147,7 @@ namespace Lokad.Cqrs.AppendOnly
 
         void LoadCaches()
         {
-            try
-            {
-                _cacheLock.EnterWriteLock();
-
-                foreach (var record in EnumerateHistory())
-                {
-                    AddToCaches(record.Name, record.Bytes, record.Stamp);
-                }
-            }
-            finally
-            {
-                _cacheLock.ExitWriteLock();
-            }
-        }
-
-        void AddToCaches(string key, byte[] buffer, long commit)
-        {
-            var storeVersion = _all.Length + 1;
-            var record = new DataWithVersion(commit, buffer, storeVersion);
-            _all = AddToNewArray(_all, new DataWithKey(key, buffer, commit, storeVersion));
-            _items.AddOrUpdate(key, s => new[] { record }, (s, records) => AddToNewArray(records, record));
-        }
-
-        static T[] AddToNewArray<T>(T[] source, T item)
-        {
-            var copy = new T[source.Length + 1];
-            Array.Copy(source, copy, source.Length);
-            copy[source.Length] = item;
-            return copy;
+            _storeVersion = _cache.ReloadEverything(EnumerateHistory());
         }
 
         void Persist(string key, byte[] buffer, long commit)
@@ -206,7 +156,7 @@ namespace Lokad.Cqrs.AppendOnly
             if (!_currentWriter.Fits(frame.Data.Length + frame.Hash.Length))
             {
                 CloseWriter();
-                EnsureWriterExists(_all.Length);
+                EnsureWriterExists(_storeVersion);
             }
 
             _currentWriter.Write(frame.Data);

@@ -5,12 +5,14 @@ using Lokad.Cqrs;
 using Lokad.Cqrs.TapeStorage;
 using NUnit.Framework;
 
+// ReSharper disable InconsistentNaming 
 namespace Cqrs.Portable.Tests
 {
     [TestFixture]
+
     public sealed class Performance_test_for_LockingInMemoryCache
     {
-        [Test]
+        [Test, Explicit]
         public void Name()
         {
             var cache = new LockingInMemoryCache();
@@ -20,8 +22,7 @@ namespace Cqrs.Portable.Tests
             cache.ReloadEverything(Generate(count, new byte[200], i => string.Format("stream_{0}", i % 100)));
             watch.Stop();
             Console.WriteLine("Cached {0} events in {1:0.00} sec. {2:0.00} eps", count, (watch.Elapsed.TotalSeconds),
-                count / watch.Elapsed.TotalSeconds
-                );
+                count / watch.Elapsed.TotalSeconds);
 
         } 
 

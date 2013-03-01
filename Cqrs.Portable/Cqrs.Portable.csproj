@@ -107,6 +107,7 @@
     <Compile Include="SystemObserver.cs" />
     <Compile Include="TapeStorage\FileAppendOnlyStore.cs" />
     <Compile Include="TapeStorage\IAppendOnlyStore.cs" />
+    <Compile Include="TapeStorage\LockingInMemoryCache.cs" />
     <Compile Include="TapeStorage\MemoryTape.cs" />
     <Compile Include="unit.cs" />
   </ItemGroup>

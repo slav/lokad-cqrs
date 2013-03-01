@@ -6,7 +6,6 @@
 using System;
 using System.Linq;
 using System.Text;
-using Lokad.Cqrs;
 using Lokad.Cqrs.AppendOnly;
 using Lokad.Cqrs.TapeStorage;
 using Microsoft.WindowsAzure;
