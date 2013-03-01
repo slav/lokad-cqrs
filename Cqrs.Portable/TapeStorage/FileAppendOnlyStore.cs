@@ -17,14 +17,14 @@ namespace Lokad.Cqrs.TapeStorage
 
         // used to synchronize access between threads within a process
 
-        readonly ReaderWriterLockSlim _thread = new ReaderWriterLockSlim();
+        
         // used to prevent writer access to store to other processes
         FileStream _lock;
         FileStream _currentWriter;
 
+        readonly LockingInMemoryCache _cache = new LockingInMemoryCache();
         // caches
-        readonly ConcurrentDictionary<string, DataWithVersion[]> _cacheByKey = new ConcurrentDictionary<string, DataWithVersion[]>();
-        DataWithKey[] _cacheFull = new DataWithKey[0];
+        
 
         public void Initialize()
         {
@@ -42,26 +42,11 @@ namespace Lokad.Cqrs.TapeStorage
             LoadCaches();
         }
 
+        long _storeVersion = 0;
+
         public void LoadCaches()
         {
-            try
-            {
-                _thread.EnterWriteLock();
-                _cacheFull = new DataWithKey[0];
-
-                // [abdullin]: known performance problem identified by Nicolas Mehlei
-                // creating new immutable array on each line will kill performance
-                // We need to at least do some batching here
-                foreach (var record in EnumerateHistory())
-                {
-                    AddToCaches(record.Name, record.Bytes, record.Stamp);
-                }
-
-            }
-            finally
-            {
-                _thread.ExitWriteLock();
-            }
+            _storeVersion = _cache.ReloadEverything(EnumerateHistory());
         }
 
         IEnumerable<StorageFrameDecoded> EnumerateHistory()
@@ -108,20 +93,14 @@ namespace Lokad.Cqrs.TapeStorage
             // should be locked
             try
             {
-                _thread.EnterWriteLock();
+                _cache.Append(streamName, data, _storeVersion + 1, streamVersion =>
+                    {
+                        EnsureWriterExists(_storeVersion);
+                        PersistInFile(streamName, data, streamVersion);
+                    }, expectedStreamVersion);
 
-                var list = _cacheByKey.GetOrAdd(streamName, s => new DataWithVersion[0]);
-                if (expectedStreamVersion >= 0)
-                {
-                    if (list.Length != expectedStreamVersion)
-                        throw new AppendOnlyStoreConcurrencyException(expectedStreamVersion, list.Length, streamName);
-                }
-
-                EnsureWriterExists(_cacheFull.Length);
-                long commit = list.Length + 1;
-
-                PersistInFile(streamName, data, commit);
-                AddToCaches(streamName, data, commit);
+                _storeVersion += 1;
+                
             }
             catch (AppendOnlyStoreConcurrencyException)
             {
@@ -136,46 +115,143 @@ namespace Lokad.Cqrs.TapeStorage
                 Close();
                 throw;
             }
+            
+        }
+
+        void PersistInFile(string key, byte[] buffer, long streamVersion)
+        {
+            StorageFramesEvil.WriteFrame(key, streamVersion, buffer, _currentWriter);
+            // make sure that we persist
+            // NB: this is not guaranteed to work on Linux
+            _currentWriter.Flush(true);
+        }
+
+        void EnsureWriterExists(long storeVersion)
+        {
+            if (_currentWriter != null) return;
+
+            var fileName = string.Format("{0:00000000}-{1:yyyy-MM-dd-HHmmss}.dat", storeVersion, DateTime.UtcNow);
+            _currentWriter = File.OpenWrite(Path.Combine(_info.FullName, fileName));
+        }
+
+        
+
+       
+        
+      
+
+        public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
+        {
+            return _cache.ReadRecords(streamName, afterVersion, maxCount);
+        }
+
+        public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
+        {
+            return _cache.ReadRecords(afterVersion, maxCount);
+            
+        }
+
+        bool _closed;
+
+        public void Close()
+        {
+            using (_lock)
+            using (_currentWriter)
+            {
+                _currentWriter = null;
+                _closed = true;
+                
+            }
+        }
+
+        public void ResetStore()
+        {
+            Close();
+
+            Directory.Delete(_info.FullName, true);
+            _cache.Clear();
+            Initialize();
+        }
+
+
+        public long GetCurrentVersion()
+        {
+            return _storeVersion;
+        }
+    }
+
+    public sealed class LockingInMemoryCache
+    {
+
+        readonly ReaderWriterLockSlim _thread = new ReaderWriterLockSlim();
+        readonly ConcurrentDictionary<string, DataWithVersion[]> _cacheByKey = new ConcurrentDictionary<string, DataWithVersion[]>();
+        DataWithKey[] _cacheFull = new DataWithKey[0];
+
+        public long ReloadEverything(IEnumerable<StorageFrameDecoded> sfd)
+        {
+            _thread.EnterWriteLock();
+            try
+            {
+                _cacheFull = new DataWithKey[0];
+
+                // [abdullin]: known performance problem identified by Nicolas Mehlei
+                // creating new immutable array on each line will kill performance
+                // We need to at least do some batching here
+
+                long storeVersion = 0;
+                foreach (var record in sfd)
+                {
+                    storeVersion += 1;
+                    AddToCaches(record.Name, record.Bytes, record.Stamp, storeVersion);
+                }
+                return storeVersion;
+            }
             finally
             {
                 _thread.ExitWriteLock();
             }
         }
 
-        void PersistInFile(string key, byte[] buffer, long commit)
+        void AddToCaches(string key, byte[] buffer, long streamVersion, long storeVersion)
         {
-            StorageFramesEvil.WriteFrame(key, commit, buffer, _currentWriter);
-            // make sure that we persist
-            // NB: this is not guaranteed to work on Linux
-            _currentWriter.Flush(true);
-        }
-
-        void EnsureWriterExists(long version)
-        {
-            if (_currentWriter != null) return;
-
-            var fileName = string.Format("{0:00000000}-{1:yyyy-MM-dd-HHmmss}.dat", version, DateTime.UtcNow);
-            _currentWriter = File.OpenWrite(Path.Combine(_info.FullName, fileName));
-        }
-
-        
-
-        void AddToCaches(string key, byte[] buffer, long commit)
-        {
-            var storeVersion = _cacheFull.Length + 1;
-            var record = new DataWithVersion(commit, buffer, storeVersion);
-            _cacheFull = ImmutableAdd(_cacheFull, new DataWithKey(key, buffer, commit, storeVersion));
+            var record = new DataWithVersion(streamVersion, buffer, storeVersion);
+            _cacheFull = ImmutableAdd(_cacheFull, new DataWithKey(key, buffer, streamVersion, storeVersion));
             _cacheByKey.AddOrUpdate(key, s => new[] { record }, (s, records) => ImmutableAdd(records, record));
         }
 
-        static T[] ImmutableAdd<T>(T[] source, params T[] items)
+        static T[] ImmutableAdd<T>(T[] source, T item)
         {
-            var copy = new T[source.Length + items.Length];
+            var copy = new T[source.Length + 1];
+
+            Array.Copy(source, copy, source.Length);
+            copy[source.Length] = item;
             
-            Array.Copy(source, 0, copy, 0, source.Length);
-            Array.Copy(items, 0, copy, source.Length, copy.Length);
-            
+
             return copy;
+        }
+
+        public void Append(string streamName, byte[] data, long newStoreVersion, Action<long> commitStreamVersion, long expectedStreamVersion = -1)
+        {
+            _thread.EnterWriteLock();
+
+            try
+            {
+                var list = _cacheByKey.GetOrAdd(streamName, s => new DataWithVersion[0]);
+                if (expectedStreamVersion >= 0)
+                {
+                    if (list.Length != expectedStreamVersion)
+                        throw new AppendOnlyStoreConcurrencyException(expectedStreamVersion, list.Length, streamName);
+                }
+                long newStreamVersion = list.Length + 1;
+                AddToCaches(streamName, data, newStreamVersion, newStoreVersion);
+
+                commitStreamVersion(newStreamVersion);
+            }
+            finally
+            {
+                _thread.ExitWriteLock();
+            }
+            
         }
 
         public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
@@ -191,6 +267,7 @@ namespace Lokad.Cqrs.TapeStorage
             var result = _cacheByKey.TryGetValue(streamName, out list) ? list : Enumerable.Empty<DataWithVersion>();
 
             return result.Skip((int)afterVersion).Take(maxCount);
+
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
@@ -199,31 +276,18 @@ namespace Lokad.Cqrs.TapeStorage
             return _cacheFull.Skip((int)afterVersion).Take(maxCount);
         }
 
-        bool _closed;
-
-        public void Close()
+        public void Clear()
         {
-            using (_lock)
-            using (_currentWriter)
+            _thread.EnterWriteLock();
+            try
             {
-                _currentWriter = null;
-                _closed = true;
+                _cacheFull = new DataWithKey[0];
+                _cacheByKey.Clear();
             }
-        }
-
-        public void ResetStore()
-        {
-            Close();
-            Directory.Delete(_info.FullName, true);
-            _cacheFull = new DataWithKey[0];
-            _cacheByKey.Clear();
-            Initialize();
-        }
-
-
-        public long GetCurrentVersion()
-        {
-            return _cacheFull.Length;
+            finally
+            {
+                _thread.ExitWriteLock();
+            }
         }
     }
 }
