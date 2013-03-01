@@ -162,7 +162,11 @@ namespace Lokad.Cqrs.TapeStorage
             Close();
 
             
-            _cache.Clear(() => Directory.Delete(_info.FullName, true));
+            _cache.Clear(() =>
+                {
+                    Directory.Delete(_info.FullName, true);
+                    _storeVersion = 0;
+                });
             Initialize();
         }
 

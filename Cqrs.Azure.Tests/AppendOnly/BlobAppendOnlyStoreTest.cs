@@ -147,7 +147,7 @@ namespace Cqrs.Azure.Tests.AppendOnly
             for (int j = 0; j < DataFileCount; j++)
             {
                 var key = "test-key" + j;
-                var data = _appendOnly.ReadRecords(key, -1, Int32.MaxValue).ToArray();
+                var data = _appendOnly.ReadRecords(key, 0, Int32.MaxValue).ToArray();
                 Assert.AreEqual(FileMessagesCount, data.Length);
                 int i = 0;
                 foreach (var dataWithKey in data)

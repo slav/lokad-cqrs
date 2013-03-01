@@ -110,10 +110,14 @@ namespace Lokad.Cqrs.AppendOnly
         public void ResetStore()
         {
             Close();
-            _cache.Clear(() => _container.ListBlobs()
-                                         .OfType<CloudPageBlob>()
-                                         .Where(item => item.Uri.ToString().EndsWith(".dat"))
-                                         .AsParallel().ForAll(i => i.DeleteIfExists()));
+            _cache.Clear(() =>
+                {
+                    var blobs = _container.ListBlobs().OfType<CloudPageBlob>().Where(item => item.Uri.ToString().EndsWith(".dat"));
+            
+                    blobs
+                        .AsParallel().ForAll(i => i.DeleteIfExists());
+                    _storeVersion = 0;
+                });
         }
 
         public long GetCurrentVersion()
