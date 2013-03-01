@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Cqrs.Portable.Tests.Envelope;
@@ -111,5 +113,32 @@ namespace Cqrs.Portable.Tests
             Assert.AreEqual(1, records[0].Items.Length);
             Assert.AreEqual("name1", (records[0].Items[0] as SerializerTest1).Name);
         }
+    }
+
+    [TestFixture]
+    public sealed class Performance_test_for_LockingInMemoryCache
+    {
+        [Test]
+        public void Name()
+        {
+            var cache = new LockingInMemoryCache();
+
+            var watch = Stopwatch.StartNew();
+            var count = 100000;
+            cache.ReloadEverything(Generate(count, new byte[200], i => string.Format("stream_{0}", i % 100)));
+            watch.Stop();
+            Console.WriteLine("Cached {0} events in {1:0.00} sec. {2:0.00} eps", count, (watch.Elapsed.TotalSeconds),
+                count / watch.Elapsed.TotalSeconds
+                );
+
+        } 
+
+        IEnumerable<StorageFrameDecoded> Generate(int count, byte[] buffer,Func<int,string> streamName)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                yield return new StorageFrameDecoded(buffer, streamName(i), i);
+            }
+        } 
     }
 }
