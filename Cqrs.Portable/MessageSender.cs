@@ -30,13 +30,13 @@ namespace Lokad.Cqrs
         public void SendHashed(object message, params MessageAttribute[] attributes)
         {
             var envelopeId = GenerateSha1HashFromContent(message, attributes);
-            Send(message, envelopeId);
+            Send(message, envelopeId,attributes);
         }
 
         public void Send(object message, params MessageAttribute[] attributes)
         {
             var envelopeId = Guid.NewGuid().ToString().ToLowerInvariant();
-            Send(message, envelopeId);
+            Send(message, envelopeId, attributes);
         }
 
         public void Send(object message, string envelopeId, params MessageAttribute[] attributes)
