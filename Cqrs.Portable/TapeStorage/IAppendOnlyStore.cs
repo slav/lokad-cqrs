@@ -23,17 +23,17 @@ namespace Lokad.Cqrs.TapeStorage
         /// Reads the records by stream name.
         /// </summary>
         /// <param name="streamName">The key.</param>
-        /// <param name="afterVersion">The after version.</param>
+        /// <param name="startingFrom">The after version.</param>
         /// <param name="maxCount">The max count.</param>
         /// <returns></returns>
-        IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount);
+        IEnumerable<DataWithVersion> ReadRecords(string streamName, long startingFrom, int maxCount);
         /// <summary>
         /// Reads the records across all streams.
         /// </summary>
-        /// <param name="afterVersion">The after version.</param>
+        /// <param name="startingFrom">The after version.</param>
         /// <param name="maxCount">The max count.</param>
         /// <returns></returns>
-        IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount); 
+        IEnumerable<DataWithKey> ReadRecords(long startingFrom, int maxCount); 
 
         void Close();
         void ResetStore();

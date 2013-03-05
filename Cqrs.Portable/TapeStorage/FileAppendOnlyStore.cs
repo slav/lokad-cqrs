@@ -133,14 +133,14 @@ namespace Lokad.Cqrs.TapeStorage
             _currentWriter = File.OpenWrite(Path.Combine(_info.FullName, fileName));
         }
 
-        public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
+        public IEnumerable<DataWithVersion> ReadRecords(string streamName, long startingFrom, int maxCount)
         {
-            return _cache.ReadRecords(streamName, afterVersion, maxCount);
+            return _cache.ReadRecords(streamName, startingFrom, maxCount);
         }
 
-        public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
+        public IEnumerable<DataWithKey> ReadRecords(long startingFrom, int maxCount)
         {
-            return _cache.ReadRecords(afterVersion, maxCount);
+            return _cache.ReadRecords(startingFrom, maxCount);
             
         }
 

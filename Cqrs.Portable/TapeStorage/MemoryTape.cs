@@ -49,10 +49,10 @@ namespace Lokad.Cqrs.TapeStorage
             _all = new List<DataWithKey>(_all) { new DataWithKey(streamName, data, result.Count, _all.Count+1)};
         }
 
-        public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
+        public IEnumerable<DataWithVersion> ReadRecords(string streamName, long startingFrom, int maxCount)
         {
-            if (afterVersion < 0)
-                throw new ArgumentOutOfRangeException("afterVersion", "Must be zero or greater.");
+            if (startingFrom < 0)
+                throw new ArgumentOutOfRangeException("startingFrom", "Must be zero or greater.");
 
             if (maxCount <= 0)
                 throw new ArgumentOutOfRangeException("maxCount", "Must be more than zero.");
@@ -60,16 +60,16 @@ namespace Lokad.Cqrs.TapeStorage
             IList<DataWithVersion> bytes;
             if (_dict.TryGetValue(streamName, out bytes))
             {
-                foreach (var bytese in bytes.Skip((int)afterVersion).Take(maxCount))
+                foreach (var bytese in bytes.Skip((int)startingFrom).Take(maxCount))
                 {
                     yield return bytese;
                 }
             }
         }
 
-        public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
+        public IEnumerable<DataWithKey> ReadRecords(long startingFrom, int maxCount)
         {
-            return _all.Skip((int) afterVersion).Take(maxCount);
+            return _all.Skip((int) startingFrom).Take(maxCount);
         }
 
         public void Close()

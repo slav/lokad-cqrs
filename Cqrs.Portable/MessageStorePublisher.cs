@@ -51,7 +51,7 @@ namespace Lokad.Cqrs
             var publishedCount = 0;
             foreach (var e in records)
             {
-                if (e.StoreVersion <= currentPosition)
+                if (e.StoreVersion < currentPosition)
                 {
                     throw new InvalidOperationException("Retrieved record with wrong position");
                 }
