@@ -102,14 +102,14 @@ namespace Lokad.Cqrs.TapeStorage
             DataWithVersion[] list;
             var result = _cacheByKey.TryGetValue(streamName, out list) ? list : Enumerable.Empty<DataWithVersion>();
 
-            return result.Skip((int)afterVersion).Take(maxCount);
+            return result.Where(d => d.StoreVersion > afterVersion).Take(maxCount);
 
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
         {
             // collection is immutable so we don't care about locks
-            return _cacheFull.Skip((int)afterVersion).Take(maxCount);
+            return _cacheFull.Where(d => d.StoreVersion > afterVersion).Take(maxCount);
         }
 
         public void Clear(Action onCommit)
