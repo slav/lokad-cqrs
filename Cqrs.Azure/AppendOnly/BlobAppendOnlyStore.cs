@@ -54,7 +54,7 @@ namespace Lokad.Cqrs.AppendOnly
             LoadCaches();
         }
 
-        long _storeVersion;
+
         int _pageSizeMultiplier = 1024 * 512;
 
         public void Append(string streamName, byte[] data, long expectedStreamVersion = -1)
@@ -62,13 +62,11 @@ namespace Lokad.Cqrs.AppendOnly
             // should be locked
             try
             {
-                _cache.Append(streamName, data, _storeVersion + 1, streamVersion =>
+                _cache.ConcurrentAppend(streamName, data, (streamVersion, storeVersion) =>
                 {
-                    EnsureWriterExists(_storeVersion);
+                    EnsureWriterExists(storeVersion);
                     Persist(streamName, data, streamVersion);
                 }, expectedStreamVersion);
-
-                _storeVersion += 1;
 
             }
             catch (AppendOnlyStoreConcurrencyException)
@@ -118,14 +116,15 @@ namespace Lokad.Cqrs.AppendOnly
 
                 blobs
                     .AsParallel().ForAll(i => i.DeleteIfExists());
-                _storeVersion = 0;
             });
         }
 
         public long GetCurrentVersion()
         {
-            return _storeVersion;
+            return _cache.StoreVersion;
         }
+
+
 
         IEnumerable<StorageFrameDecoded> EnumerateHistory()
         {
@@ -138,7 +137,6 @@ namespace Lokad.Cqrs.AppendOnly
                     BlobListingDetails = BlobListingDetails.Metadata
                 })
                 .OrderBy(s => s.Uri.ToString())
-
                 .OfType<CloudPageBlob>()
                 .Where(s => s.Name.EndsWith(".dat"));
 
@@ -156,23 +154,26 @@ namespace Lokad.Cqrs.AppendOnly
                         lastValidPosition = stream.Position;
                         yield return result;
                     }
-
-
                 }
                 var haveSomethingToTruncate = bytes.Length - lastValidPosition >= 512;
                 if (potentiallyNonTruncatedChunk & haveSomethingToTruncate)
                 {
-                    var trunc = lastValidPosition;
-                    var remainder = lastValidPosition % 512;
-                    if (remainder > 0)
-                    {
-                        trunc += 512 - remainder;
-                    }
-                    Trace.WriteLine(string.Format("Truncating {0} to {1}", fileInfo.Name, trunc));
-                    _container.GetPageBlobReference(fileInfo.Name + ".bak").CopyFromBlob(fileInfo);
-                    SetLength(fileInfo, trunc);
+                    TruncateBlob(lastValidPosition, fileInfo);
                 }
             }
+        }
+
+        void TruncateBlob(long lastValidPosition, CloudPageBlob fileInfo)
+        {
+            var trunc = lastValidPosition;
+            var remainder = lastValidPosition % 512;
+            if (remainder > 0)
+            {
+                trunc += 512 - remainder;
+            }
+            Trace.WriteLine(string.Format("Truncating {0} to {1}", fileInfo.Name, trunc));
+            _container.GetPageBlobReference(fileInfo.Name + ".bak").CopyFromBlob(fileInfo);
+            SetLength(fileInfo, trunc);
         }
 
         static void SetLength(CloudPageBlob blob, long newLength, int timeout = 10000)
@@ -195,7 +196,7 @@ namespace Lokad.Cqrs.AppendOnly
 
         void LoadCaches()
         {
-            _storeVersion = _cache.ReloadEverything(EnumerateHistory());
+            _cache.ReloadEverything(EnumerateHistory());
         }
 
         void Persist(string key, byte[] buffer, long commit)
@@ -204,7 +205,7 @@ namespace Lokad.Cqrs.AppendOnly
             if (!_currentWriter.Fits(frame.Data.Length + frame.Hash.Length))
             {
                 CloseWriter();
-                EnsureWriterExists(_storeVersion);
+                EnsureWriterExists(_cache.StoreVersion);
             }
 
             _currentWriter.Write(frame.Data);

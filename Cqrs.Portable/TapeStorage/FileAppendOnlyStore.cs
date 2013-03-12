@@ -40,11 +40,11 @@ namespace Lokad.Cqrs.TapeStorage
             LoadCaches();
         }
 
-        long _storeVersion = 0;
+
 
         public void LoadCaches()
         {
-            _storeVersion = _cache.ReloadEverything(EnumerateHistory());
+            _cache.ReloadEverything(EnumerateHistory());
         }
 
         IEnumerable<StorageFrameDecoded> EnumerateHistory()
@@ -92,13 +92,11 @@ namespace Lokad.Cqrs.TapeStorage
             try
             {
 
-                _cache.Append(streamName, data, _storeVersion + 1, streamVersion =>
+                _cache.ConcurrentAppend(streamName, data, (streamVersion, storeVersion) =>
                 {
-                    EnsureWriterExists(_storeVersion);
+                    EnsureWriterExists(storeVersion);
                     PersistInFile(streamName, data, streamVersion);
                 }, expectedStreamVersion);
-
-                _storeVersion += 1;
 
             }
             catch (AppendOnlyStoreConcurrencyException)
@@ -160,20 +158,14 @@ namespace Lokad.Cqrs.TapeStorage
         public void ResetStore()
         {
             Close();
-
-
-            _cache.Clear(() =>
-            {
-                Directory.Delete(_info.FullName, true);
-                _storeVersion = 0;
-            });
+            _cache.Clear(() => Directory.Delete(_info.FullName, true));
             Initialize();
         }
 
 
         public long GetCurrentVersion()
         {
-            return _storeVersion;
+            return _cache.StoreVersion;
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Lokad.Cqrs.TapeStorage
         ConcurrentDictionary<string, DataWithVersion[]> _cacheByKey = new ConcurrentDictionary<string, DataWithVersion[]>();
         DataWithKey[] _cacheFull = new DataWithKey[0];
 
-        public long ReloadEverything(IEnumerable<StorageFrameDecoded> sfd)
+        public void ReloadEverything(IEnumerable<StorageFrameDecoded> sfd)
         {
             _thread.EnterWriteLock();
             try
@@ -44,8 +44,7 @@ namespace Lokad.Cqrs.TapeStorage
 
                 _cacheFull = cacheFullBuilder.ToArray();
                 _cacheByKey = new ConcurrentDictionary<string, DataWithVersion[]>(streamPointerBuilder.Select(p => new KeyValuePair<string, DataWithVersion[]>(p.Key, p.Value.ToArray())));
-
-                return storeVersion;
+                _storeVersion = storeVersion;
             }
             finally
             {
@@ -64,7 +63,13 @@ namespace Lokad.Cqrs.TapeStorage
             return copy;
         }
 
-        public void Append(string streamName, byte[] data, long newStoreVersion, Action<long> commitStreamVersion, long expectedStreamVersion = -1)
+        long _storeVersion;
+
+        public long StoreVersion { get { return _storeVersion; } }
+
+        public delegate void OnCommit(long streamVersion, long storeVersion);
+
+        public void ConcurrentAppend(string streamName, byte[] data, OnCommit commit, long expectedStreamVersion = -1)
         {
             _thread.EnterWriteLock();
 
@@ -77,11 +82,16 @@ namespace Lokad.Cqrs.TapeStorage
                         throw new AppendOnlyStoreConcurrencyException(expectedStreamVersion, list.Length, streamName);
                 }
                 long newStreamVersion = list.Length + 1;
+                long newStoreVersion = _storeVersion + 1;
+
+                commit(expectedStreamVersion, newStoreVersion);
+
+                // update in-memory cache only after real commit completed
+
                 var record = new DataWithVersion(newStreamVersion, data, newStoreVersion);
                 _cacheFull = ImmutableAdd(_cacheFull, new DataWithKey(streamName, data, newStreamVersion, newStoreVersion));
                 _cacheByKey.AddOrUpdate(streamName, s => new[] { record }, (s, records) => ImmutableAdd(records, record));
-
-                commitStreamVersion(newStreamVersion);
+                _storeVersion = newStoreVersion;
             }
             finally
             {
@@ -120,6 +130,7 @@ namespace Lokad.Cqrs.TapeStorage
                 onCommit();
                 _cacheFull = new DataWithKey[0];
                 _cacheByKey.Clear();
+                _storeVersion = 0;
             }
             finally
             {
