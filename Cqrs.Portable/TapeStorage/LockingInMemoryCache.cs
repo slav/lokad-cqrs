@@ -59,7 +59,7 @@ namespace Lokad.Cqrs.TapeStorage
 
             Array.Copy(source, copy, source.Length);
             copy[source.Length] = item;
-            
+
 
             return copy;
         }
@@ -87,7 +87,7 @@ namespace Lokad.Cqrs.TapeStorage
             {
                 _thread.ExitWriteLock();
             }
-            
+
         }
 
         public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
@@ -102,14 +102,14 @@ namespace Lokad.Cqrs.TapeStorage
             DataWithVersion[] list;
             var result = _cacheByKey.TryGetValue(streamName, out list) ? list : Enumerable.Empty<DataWithVersion>();
 
-            return result.Where(d => d.StoreVersion > afterVersion).Take(maxCount);
+            return result.Where(version => version.StoreVersion > afterVersion).Take(maxCount);
 
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
         {
             // collection is immutable so we don't care about locks
-            return _cacheFull.Where(d => d.StoreVersion > afterVersion).Take(maxCount);
+            return _cacheFull.Where(key => key.StoreVersion > afterVersion).Take(maxCount);
         }
 
         public void Clear(Action onCommit)
