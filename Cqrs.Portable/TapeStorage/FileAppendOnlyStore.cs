@@ -15,14 +15,14 @@ namespace Lokad.Cqrs.TapeStorage
 
         // used to synchronize access between threads within a process
 
-        
+
         // used to prevent writer access to store to other processes
         FileStream _lock;
         FileStream _currentWriter;
 
         readonly LockingInMemoryCache _cache = new LockingInMemoryCache();
         // caches
-        
+
 
         public void Initialize()
         {
@@ -91,15 +91,15 @@ namespace Lokad.Cqrs.TapeStorage
             // should be locked
             try
             {
-                
+
                 _cache.Append(streamName, data, _storeVersion + 1, streamVersion =>
-                    {
-                        EnsureWriterExists(_storeVersion);
-                        PersistInFile(streamName, data, streamVersion);
-                    }, expectedStreamVersion);
+                {
+                    EnsureWriterExists(_storeVersion);
+                    PersistInFile(streamName, data, streamVersion);
+                }, expectedStreamVersion);
 
                 _storeVersion += 1;
-                
+
             }
             catch (AppendOnlyStoreConcurrencyException)
             {
@@ -114,7 +114,7 @@ namespace Lokad.Cqrs.TapeStorage
                 Close();
                 throw;
             }
-            
+
         }
 
         void PersistInFile(string key, byte[] buffer, long streamVersion)
@@ -133,15 +133,15 @@ namespace Lokad.Cqrs.TapeStorage
             _currentWriter = File.OpenWrite(Path.Combine(_info.FullName, fileName));
         }
 
-        public IEnumerable<DataWithVersion> ReadRecords(string streamName, long startingFrom, int maxCount)
+        public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
         {
-            return _cache.ReadRecords(streamName, startingFrom, maxCount);
+            return _cache.ReadRecords(streamName, afterVersion, maxCount);
         }
 
-        public IEnumerable<DataWithKey> ReadRecords(long startingFrom, int maxCount)
+        public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
         {
-            return _cache.ReadRecords(startingFrom, maxCount);
-            
+            return _cache.ReadRecords(afterVersion, maxCount);
+
         }
 
         bool _closed;
@@ -153,7 +153,7 @@ namespace Lokad.Cqrs.TapeStorage
             {
                 _currentWriter = null;
                 _closed = true;
-                
+
             }
         }
 
@@ -161,12 +161,12 @@ namespace Lokad.Cqrs.TapeStorage
         {
             Close();
 
-            
+
             _cache.Clear(() =>
-                {
-                    Directory.Delete(_info.FullName, true);
-                    _storeVersion = 0;
-                });
+            {
+                Directory.Delete(_info.FullName, true);
+                _storeVersion = 0;
+            });
             Initialize();
         }
 
