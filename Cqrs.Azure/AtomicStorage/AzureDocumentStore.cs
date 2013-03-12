@@ -86,10 +86,12 @@ namespace Lokad.Cqrs.AtomicStorage
         public void WriteContents(string bucket, IEnumerable<DocumentRecord> records)
         {
             var cloudBlobDirectory = _client.GetBlobDirectoryReference(bucket);
-            foreach (var atomicRecord in records)
-            {
-                cloudBlobDirectory.GetBlobReference(atomicRecord.Key).UploadByteArray(atomicRecord.Read());
-            }
+
+            records.AsParallel()
+                .WithDegreeOfParallelism(Environment.ProcessorCount * 12)
+                .ForAll(atomicRecord => cloudBlobDirectory
+                    .GetBlobReference(atomicRecord.Key)
+                    .UploadByteArray(atomicRecord.Read()));
         }
 
         
