@@ -76,12 +76,14 @@ namespace Lokad.Cqrs.TapeStorage
             try
             {
                 var list = _cacheByKey.GetOrAdd(streamName, s => new DataWithVersion[0]);
+                var actualStreamVersion = list.Length == 0 ? 0 : list.Max(d => d.StreamVersion);
+
                 if (expectedStreamVersion >= 0)
                 {
-                    if (list.Length != expectedStreamVersion)
-                        throw new AppendOnlyStoreConcurrencyException(expectedStreamVersion, list.Length, streamName);
+                    if (actualStreamVersion != expectedStreamVersion)
+                        throw new AppendOnlyStoreConcurrencyException(expectedStreamVersion, actualStreamVersion, streamName);
                 }
-                long newStreamVersion = list.Length + 1;
+                long newStreamVersion = actualStreamVersion + 1;
                 long newStoreVersion = _storeVersion + 1;
 
                 commit(expectedStreamVersion, newStoreVersion);
