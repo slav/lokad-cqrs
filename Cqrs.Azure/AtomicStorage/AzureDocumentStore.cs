@@ -53,11 +53,12 @@ namespace Lokad.Cqrs.AtomicStorage
         public IEnumerable<DocumentRecord> EnumerateContents(string bucket)
         {
             var subdir = _client.GetBlobDirectoryReference(bucket);
-            var l = subdir.ListBlobs(new BlobRequestOptions {UseFlatBlobListing = true});
             if (!ContainerExist(subdir.Container))
                 yield break;
+
+            var items = subdir.ListBlobs(new BlobRequestOptions {UseFlatBlobListing = true});
  
-            foreach (var item in l)
+            foreach (var item in items)
             {
                 var blob = subdir.GetBlobReference(item.Uri.ToString());
                 var rel = subdir.Uri.MakeRelativeUri(item.Uri).ToString();
