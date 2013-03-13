@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -84,7 +83,7 @@ namespace Lokad.Cqrs.AppendOnly
             }
         }
 
-        public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
+        public IEnumerable<DataWithKey> ReadRecords(string streamName, long afterVersion, int maxCount)
         {
             return _cache.ReadRecords(streamName, afterVersion, maxCount);
         }

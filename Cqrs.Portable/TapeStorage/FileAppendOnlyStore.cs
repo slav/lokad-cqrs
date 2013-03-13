@@ -131,7 +131,7 @@ namespace Lokad.Cqrs.TapeStorage
             _currentWriter = File.OpenWrite(Path.Combine(_info.FullName, fileName));
         }
 
-        public IEnumerable<DataWithVersion> ReadRecords(string streamName, long afterVersion, int maxCount)
+        public IEnumerable<DataWithKey> ReadRecords(string streamName, long afterVersion, int maxCount)
         {
             return _cache.ReadRecords(streamName, afterVersion, maxCount);
         }
