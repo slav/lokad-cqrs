@@ -1,3 +1,5 @@
+using System.Text;
+using Lokad.Cqrs;
 using NUnit.Framework;
 
 namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests

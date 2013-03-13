@@ -1,14 +1,11 @@
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using Lokad.Cqrs;
 using Lokad.Cqrs.TapeStorage;
 using NUnit.Framework;
 
 namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
 {
     [TestFixture]
-    public sealed class when_doing_concurrent_append
+    public sealed class when_doing_concurrent_append : LockingInMemoryHelpers
     {
         [Test]
         public void given_empty_cache_and_valid_commit_function()
@@ -44,14 +41,7 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
             
         }
 
-        IEnumerable<StorageFrameDecoded> CreateFrames(params string[] streamNames)
-        {
-            foreach (var streamName in streamNames)
-            {
-                yield return new StorageFrameDecoded(Encoding.UTF8.GetBytes(streamName), streamName, -1);
-            }
-        }
-
+       
 
 
         [Test]
