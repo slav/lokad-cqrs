@@ -85,12 +85,12 @@ namespace Lokad.Cqrs.AppendOnly
 
         public IEnumerable<DataWithKey> ReadRecords(string streamName, long afterVersion, int maxCount)
         {
-            return _cache.ReadRecords(streamName, afterVersion, maxCount);
+            return _cache.ReadStream(streamName, afterVersion, maxCount);
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
         {
-            return _cache.ReadRecords(afterVersion, maxCount);
+            return _cache.ReadAll(afterVersion, maxCount);
 
         }
 
@@ -195,7 +195,7 @@ namespace Lokad.Cqrs.AppendOnly
 
         void LoadCaches()
         {
-            _cache.ReloadEverything(EnumerateHistory());
+            _cache.LoadHistory(EnumerateHistory());
         }
 
         void Persist(string key, byte[] buffer, long commit)

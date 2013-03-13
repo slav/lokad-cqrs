@@ -22,12 +22,12 @@ namespace Lokad.Cqrs.TapeStorage
 
         public IEnumerable<DataWithKey> ReadRecords(string streamName, long startingFrom, int maxCount)
         {
-            return _cache.ReadRecords(streamName, startingFrom, maxCount);
+            return _cache.ReadStream(streamName, startingFrom, maxCount);
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long startingFrom, int maxCount)
         {
-            return _cache.ReadRecords(startingFrom, maxCount);
+            return _cache.ReadAll(startingFrom, maxCount);
         }
 
         public void Close()

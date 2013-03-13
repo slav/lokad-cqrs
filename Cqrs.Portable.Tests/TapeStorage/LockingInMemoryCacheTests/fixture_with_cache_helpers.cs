@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Lokad.Cqrs;
@@ -7,7 +8,7 @@ using NUnit.Framework;
 
 namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
 {
-    public abstract class LockingInMemoryHelpers
+    public abstract class fixture_with_cache_helpers
     {
         protected IEnumerable<StorageFrameDecoded> CreateFrames(params string[] streamNames)
         {
@@ -18,6 +19,19 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
                 var storeVersion = i + 1;
                 var bytes = Encoding.UTF8.GetBytes("event-" + storeVersion);
                 yield return new StorageFrameDecoded(bytes, streamName, ("event-" + storeVersion).GetHashCode());
+            }
+        }
+
+        protected void EatException(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception)
+            {
+                
+                
             }
         }
 

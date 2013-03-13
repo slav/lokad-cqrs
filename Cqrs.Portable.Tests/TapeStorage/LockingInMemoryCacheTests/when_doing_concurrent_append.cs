@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
 {
     [TestFixture]
-    public sealed class when_doing_concurrent_append : LockingInMemoryHelpers
+    public sealed class when_doing_concurrent_append : fixture_with_cache_helpers
     {
         [Test]
         public void given_empty_cache_and_valid_commit_function()
@@ -18,7 +18,7 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         {
             var cache = new LockingInMemoryCache();
 
-            cache.ReloadEverything(CreateFrames("stream", "otherStream"));
+            cache.LoadHistory(CreateFrames("stream", "otherStream"));
 
             Assert.Throws<FileNotFoundException>(
                 () => cache.ConcurrentAppend("stream", new byte[1], (version, storeVersion) =>
@@ -36,20 +36,36 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         }
 
         [Test]
-        public void given_reloaded_and_appended_cache_with_specified_version_expectation()
+        public void given_reloaded_and_appended_cache_with_valid_version_expectation()
         {
-            
+            var cache = new LockingInMemoryCache();
+
+            cache.LoadHistory(CreateFrames("stream", "otherStream"));
+            cache.ConcurrentAppend("stream", GetEventBytes(4), (version, storeVersion) => { });
+
+            long? commitStoreVersion = null;
+            long? commitStreamVersion = null;
+
+            cache.ConcurrentAppend("stream", GetEventBytes(5), (version, storeVersion) =>
+                {
+                    commitStoreVersion = storeVersion;
+                    commitStreamVersion = version;
+                },2);
+
+            Assert.AreEqual(4, commitStoreVersion, "commitStoreVersion");
+            Assert.AreEqual(3, commitStreamVersion, "commitStreamVersion");
+            Assert.AreEqual(4, cache.StoreVersion);
         }
 
        
 
 
         [Test]
-        public void given_reloaded_cache_and_non_matching_expected_version()
+        public void given_reloaded_cache_and_invalid_expected_version()
         {
             var cache = new LockingInMemoryCache();
 
-            cache.ReloadEverything(CreateFrames("stream", "otherStream"));
+            cache.LoadHistory(CreateFrames("stream", "otherStream"));
 
             bool commitWasCalled = false;
 
@@ -83,7 +99,7 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         {
             var cache = new LockingInMemoryCache();
 
-            cache.ReloadEverything(CreateFrames("stream", "otherStream"));
+            cache.LoadHistory(CreateFrames("stream", "otherStream"));
 
             long? commitStoreVersion = null;
             long? commitStreamVersion = null;

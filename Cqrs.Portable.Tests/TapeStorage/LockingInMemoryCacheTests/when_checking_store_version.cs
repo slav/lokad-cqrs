@@ -29,7 +29,7 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         public void given_empty_reload()
         {
             var cache = new LockingInMemoryCache();
-            cache.ReloadEverything(Enumerable.Empty<StorageFrameDecoded>());
+            cache.LoadHistory(Enumerable.Empty<StorageFrameDecoded>());
             Assert.AreEqual(0, cache.StoreVersion);
         }
 
@@ -37,7 +37,7 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         public void given_non_empty_reload()
         {
             var cache = new LockingInMemoryCache();
-            cache.ReloadEverything(new StorageFrameDecoded[]
+            cache.LoadHistory(new StorageFrameDecoded[]
                 {
                     new StorageFrameDecoded(new byte[1], "test",0), 
                 });

@@ -44,7 +44,7 @@ namespace Lokad.Cqrs.TapeStorage
 
         public void LoadCaches()
         {
-            _cache.ReloadEverything(EnumerateHistory());
+            _cache.LoadHistory(EnumerateHistory());
         }
 
         IEnumerable<StorageFrameDecoded> EnumerateHistory()
@@ -133,12 +133,12 @@ namespace Lokad.Cqrs.TapeStorage
 
         public IEnumerable<DataWithKey> ReadRecords(string streamName, long afterVersion, int maxCount)
         {
-            return _cache.ReadRecords(streamName, afterVersion, maxCount);
+            return _cache.ReadStream(streamName, afterVersion, maxCount);
         }
 
         public IEnumerable<DataWithKey> ReadRecords(long afterVersion, int maxCount)
         {
-            return _cache.ReadRecords(afterVersion, maxCount);
+            return _cache.ReadAll(afterVersion, maxCount);
 
         }
 

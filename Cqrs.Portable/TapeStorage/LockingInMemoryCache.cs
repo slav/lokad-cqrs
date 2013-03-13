@@ -11,15 +11,23 @@ namespace Lokad.Cqrs.TapeStorage
     /// </summary>
     public sealed class LockingInMemoryCache
     {
+
+        
+        
+
+        
         readonly ReaderWriterLockSlim _thread = new ReaderWriterLockSlim();
         ConcurrentDictionary<string, DataWithKey[]> _cacheByKey = new ConcurrentDictionary<string, DataWithKey[]>();
         DataWithKey[] _cacheFull = new DataWithKey[0];
 
-        public void ReloadEverything(IEnumerable<StorageFrameDecoded> sfd)
+        public void LoadHistory(IEnumerable<StorageFrameDecoded> sfd)
         {
             _thread.EnterWriteLock();
             try
             {
+                if (_storeVersion != 0)
+                    throw new InvalidOperationException("Must clear cache before loading history");
+
                 _cacheFull = new DataWithKey[0];
 
                 // [abdullin]: known performance problem identified by Nicolas Mehlei
@@ -100,6 +108,7 @@ namespace Lokad.Cqrs.TapeStorage
                 _cacheFull = ImmutableAdd(_cacheFull, dataWithKey);
                 _cacheByKey.AddOrUpdate(streamName, s => new[] { dataWithKey }, (s, records) => ImmutableAdd(records, dataWithKey));
                 _storeVersion = newStoreVersion;
+
             }
             finally
             {
@@ -108,8 +117,10 @@ namespace Lokad.Cqrs.TapeStorage
 
         }
 
-        public IEnumerable<DataWithKey> ReadRecords(string streamName, long afterStreamVersion, int maxCount)
+        public IEnumerable<DataWithKey> ReadStream(string streamName, long afterStreamVersion, int maxCount)
         {
+            if (null == streamName)
+                throw new ArgumentNullException("streamName");
             if (afterStreamVersion < 0)
                 throw new ArgumentOutOfRangeException("afterStreamVersion", "Must be zero or greater.");
 
@@ -124,8 +135,15 @@ namespace Lokad.Cqrs.TapeStorage
 
         }
 
-        public IEnumerable<DataWithKey> ReadRecords(long afterStoreVersion, int maxCount)
+        public IEnumerable<DataWithKey> ReadAll(long afterStoreVersion, int maxCount)
         {
+            if (afterStoreVersion < 0)
+                throw new ArgumentOutOfRangeException("afterStoreVersion", "Must be zero or greater.");
+
+            if (maxCount <= 0)
+                throw new ArgumentOutOfRangeException("maxCount", "Must be more than zero.");
+
+
             // collection is immutable so we don't care about locks
             return _cacheFull.Where(key => key.StoreVersion > afterStoreVersion).Take(maxCount);
         }
