@@ -91,7 +91,7 @@ namespace Lokad.Cqrs.TapeStorage
                 long newStreamVersion = actualStreamVersion + 1;
                 long newStoreVersion = _storeVersion + 1;
 
-                commit(expectedStreamVersion, newStoreVersion);
+                commit(newStreamVersion, newStoreVersion);
 
                 // update in-memory cache only after real commit completed
 
