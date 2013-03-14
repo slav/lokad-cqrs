@@ -1,5 +1,7 @@
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading;
 using Lokad.Cqrs;
 using Lokad.Cqrs.TapeStorage;
 using NUnit.Framework;
@@ -21,14 +23,32 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         [Test]
         public void given_reloaded_cache()
         {
-            // TODO: fill this
+            var cache = new LockingInMemoryCache();
+
+            cache.ConcurrentAppend("stream1", new byte[1], (version, storeVersion) => { });
+
+            Assert.Throws<LockRecursionException>(() => cache.Clear(() =>
+                cache.LoadHistory(CreateFrames("stream2"))
+                ));
+
+            Assert.AreEqual(1, cache.StoreVersion);
+            Assert.AreEqual("stream1", cache.ReadAll(0, 1).First().Key);
         }
 
 
         [Test]
         public void given_appended_cache()
         {
-            // TODO: fill this
+            var cache = new LockingInMemoryCache();
+
+            cache.ConcurrentAppend("stream1", new byte[1], (version, storeVersion) => { });
+            
+            Assert.Throws<LockRecursionException>(() => cache.Clear(() => 
+                cache.ConcurrentAppend("stream2", new byte[1], (version, storeVersion) => { })
+                ));
+            
+            Assert.AreEqual(1, cache.StoreVersion);
+            Assert.AreEqual("stream1", cache.ReadAll(0, 1).First().Key);
         }
 
         [Test]
@@ -39,7 +59,7 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
             cache.ConcurrentAppend("stream1", new byte[1], (version, storeVersion) => { });
 
 
-            
+
             Assert.Throws<FileNotFoundException>(() => cache.Clear(() =>
                 {
                     throw new FileNotFoundException();
