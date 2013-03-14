@@ -10,7 +10,20 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         [Test]
         public void given_empty_cache_and_valid_commit_function()
         {
-            // TODO: fill this
+            var cache = new LockingInMemoryCache();
+
+            long? commitStoreVersion = null;
+            long? commitStreamVersion = null;
+
+            cache.ConcurrentAppend("stream", GetEventBytes(4), (version, storeVersion) =>
+                {
+                    commitStoreVersion = storeVersion;
+                    commitStreamVersion = version;
+                });
+
+            Assert.AreEqual(1, commitStoreVersion, "commitStoreVersion");
+            Assert.AreEqual(1, commitStreamVersion, "commitStreamVersion");
+            Assert.AreEqual(1, cache.StoreVersion);
         }
 
         [Test]
@@ -32,7 +45,11 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         [Test]
         public void given_reloaded_cache_and_non_specified_version_expectation()
         {
-            // TODO: fill this
+            var cache = new LockingInMemoryCache();
+
+            cache.LoadHistory(CreateFrames("stream", "otherStream"));
+            
+            Assert.AreEqual(2, cache.StoreVersion);
         }
 
         [Test]
@@ -50,14 +67,14 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
                 {
                     commitStoreVersion = storeVersion;
                     commitStreamVersion = version;
-                },2);
+                }, 2);
 
             Assert.AreEqual(4, commitStoreVersion, "commitStoreVersion");
             Assert.AreEqual(3, commitStreamVersion, "commitStreamVersion");
             Assert.AreEqual(4, cache.StoreVersion);
         }
 
-       
+
 
 
         [Test]
@@ -85,11 +102,11 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
             long? commitStoreVersion = null;
             long? commitStreamVersion = null;
 
-            cache.ConcurrentAppend("stream", new byte[1],(version, storeVersion) =>
+            cache.ConcurrentAppend("stream", new byte[1], (version, storeVersion) =>
                 {
                     commitStoreVersion = 1;
                     commitStreamVersion = 1;
-                },0 );
+                }, 0);
             Assert.AreEqual(1, commitStoreVersion, "commitStoreVersion");
             Assert.AreEqual(1, commitStreamVersion, "commitStreamVersion");
         }
@@ -108,7 +125,7 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
                 {
                     commitStoreVersion = storeVersion;
                     commitStreamVersion = streamVersion;
-                }, 1 );
+                }, 1);
 
             Assert.AreEqual(3, commitStoreVersion, "commitStoreVersion");
             Assert.AreEqual(2, commitStreamVersion, "commitStreamVersion");
