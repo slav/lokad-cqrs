@@ -15,7 +15,7 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
             long? commitStoreVersion = null;
             long? commitStreamVersion = null;
 
-            cache.ConcurrentAppend("stream", GetEventBytes(4), (version, storeVersion) =>
+            cache.ConcurrentAppend("stream", GetEventBytes(1), (version, storeVersion) =>
                 {
                     commitStoreVersion = storeVersion;
                     commitStreamVersion = version;
@@ -23,7 +23,15 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
 
             Assert.AreEqual(1, commitStoreVersion, "commitStoreVersion");
             Assert.AreEqual(1, commitStreamVersion, "commitStreamVersion");
+
             Assert.AreEqual(1, cache.StoreVersion);
+
+            var expected = new[]
+                {
+                    CreateKey(1, 1, "stream"),
+                };
+            DataAssert.AreEqual(expected, cache.ReadStream("stream",0,100));
+            DataAssert.AreEqual(expected, cache.ReadAll(0, 100));
         }
 
         [Test]
@@ -43,18 +51,21 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         }
 
         [Test]
-        public void given_reloaded_cache_and_non_specified_version_expectation()
+        public void given_filled_cache_and_concurrent_append_with_non_specified_version_expectation()
         {
             var cache = new LockingInMemoryCache();
 
             cache.LoadHistory(CreateFrames("stream", "otherStream"));
+
+            cache.ConcurrentAppend("stream", GetEventBytes(3), (version, storeVersion) => { }, -1);
             
-            Assert.AreEqual(2, cache.StoreVersion);
+            Assert.AreEqual(3, cache.StoreVersion);
         }
 
         [Test]
-        public void given_reloaded_and_appended_cache_with_valid_version_expectation()
+        public void given_filled_cache_and_concurrent_append_with_valid_version_expectation()
         {
+            // GIVEN
             var cache = new LockingInMemoryCache();
 
             cache.LoadHistory(CreateFrames("stream", "otherStream"));
@@ -63,12 +74,15 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
             long? commitStoreVersion = null;
             long? commitStreamVersion = null;
 
+            // WHEN
             cache.ConcurrentAppend("stream", GetEventBytes(5), (version, storeVersion) =>
                 {
                     commitStoreVersion = storeVersion;
                     commitStreamVersion = version;
                 }, 2);
 
+
+            // EXPECT
             Assert.AreEqual(4, commitStoreVersion, "commitStoreVersion");
             Assert.AreEqual(3, commitStreamVersion, "commitStreamVersion");
             Assert.AreEqual(4, cache.StoreVersion);
@@ -78,7 +92,7 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
 
 
         [Test]
-        public void given_reloaded_cache_and_invalid_expected_version()
+        public void given_reloaded_cache_and_concurrent_append_with_invalid_expected_version()
         {
             var cache = new LockingInMemoryCache();
 
@@ -130,10 +144,5 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
             Assert.AreEqual(3, commitStoreVersion, "commitStoreVersion");
             Assert.AreEqual(2, commitStreamVersion, "commitStreamVersion");
         }
-
-
-
-
-
     }
 }

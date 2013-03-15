@@ -24,15 +24,10 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
         public void given_reloaded_cache()
         {
             var cache = new LockingInMemoryCache();
+            cache.LoadHistory(CreateFrames("stream2"));
+            cache.Clear(() => { });
 
-            cache.ConcurrentAppend("stream1", new byte[1], (version, storeVersion) => { });
-
-            Assert.Throws<LockRecursionException>(() => cache.Clear(() =>
-                cache.LoadHistory(CreateFrames("stream2"))
-                ));
-
-            Assert.AreEqual(1, cache.StoreVersion);
-            Assert.AreEqual("stream1", cache.ReadAll(0, 1).First().Key);
+            Assert.AreEqual(0, cache.StoreVersion);
         }
 
 
@@ -42,13 +37,10 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
             var cache = new LockingInMemoryCache();
 
             cache.ConcurrentAppend("stream1", new byte[1], (version, storeVersion) => { });
-            
-            Assert.Throws<LockRecursionException>(() => cache.Clear(() => 
-                cache.ConcurrentAppend("stream2", new byte[1], (version, storeVersion) => { })
-                ));
-            
-            Assert.AreEqual(1, cache.StoreVersion);
-            Assert.AreEqual("stream1", cache.ReadAll(0, 1).First().Key);
+
+            cache.Clear(() => { });
+
+            Assert.AreEqual(0, cache.StoreVersion);
         }
 
         [Test]
@@ -57,8 +49,6 @@ namespace Cqrs.Portable.Tests.TapeStorage.LockingInMemoryCacheTests
             var cache = new LockingInMemoryCache();
 
             cache.ConcurrentAppend("stream1", new byte[1], (version, storeVersion) => { });
-
-
 
             Assert.Throws<FileNotFoundException>(() => cache.Clear(() =>
                 {

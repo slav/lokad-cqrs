@@ -11,11 +11,6 @@ namespace Lokad.Cqrs.TapeStorage
     /// </summary>
     public sealed class LockingInMemoryCache
     {
-
-        
-        
-
-        
         readonly ReaderWriterLockSlim _thread = new ReaderWriterLockSlim();
         ConcurrentDictionary<string, DataWithKey[]> _cacheByKey = new ConcurrentDictionary<string, DataWithKey[]>();
         DataWithKey[] _cacheFull = new DataWithKey[0];
@@ -25,7 +20,7 @@ namespace Lokad.Cqrs.TapeStorage
             _thread.EnterWriteLock();
             try
             {
-                if (_storeVersion != 0)
+                if (StoreVersion != 0)
                     throw new InvalidOperationException("Must clear cache before loading history");
 
                 _cacheFull = new DataWithKey[0];
@@ -57,7 +52,7 @@ namespace Lokad.Cqrs.TapeStorage
 
                 _cacheFull = cacheFullBuilder.ToArray();
                 _cacheByKey = new ConcurrentDictionary<string, DataWithKey[]>(streamPointerBuilder.Select(p => new KeyValuePair<string, DataWithKey[]>(p.Key, p.Value.ToArray())));
-                _storeVersion = newStoreVersion;
+                StoreVersion = newStoreVersion;
             }
             finally
             {
@@ -76,9 +71,7 @@ namespace Lokad.Cqrs.TapeStorage
             return copy;
         }
 
-        long _storeVersion;
-
-        public long StoreVersion { get { return _storeVersion; } }
+        public long StoreVersion { get; private set; }
 
         public delegate void OnCommit(long streamVersion, long storeVersion);
 
@@ -97,7 +90,7 @@ namespace Lokad.Cqrs.TapeStorage
                         throw new AppendOnlyStoreConcurrencyException(expectedStreamVersion, actualStreamVersion, streamName);
                 }
                 long newStreamVersion = actualStreamVersion + 1;
-                long newStoreVersion = _storeVersion + 1;
+                long newStoreVersion = StoreVersion + 1;
 
                 commit(newStreamVersion, newStoreVersion);
 
@@ -107,7 +100,7 @@ namespace Lokad.Cqrs.TapeStorage
                 var dataWithKey = new DataWithKey(streamName, data, newStreamVersion, newStoreVersion);
                 _cacheFull = ImmutableAdd(_cacheFull, dataWithKey);
                 _cacheByKey.AddOrUpdate(streamName, s => new[] { dataWithKey }, (s, records) => ImmutableAdd(records, dataWithKey));
-                _storeVersion = newStoreVersion;
+                StoreVersion = newStoreVersion;
 
             }
             finally
@@ -148,15 +141,15 @@ namespace Lokad.Cqrs.TapeStorage
             return _cacheFull.Where(key => key.StoreVersion > afterStoreVersion).Take(maxCount);
         }
 
-        public void Clear(Action onCommit)
+        public void Clear(Action executeWhenCommitting)
         {
             _thread.EnterWriteLock();
             try
             {
-                onCommit();
+                executeWhenCommitting();
                 _cacheFull = new DataWithKey[0];
                 _cacheByKey.Clear();
-                _storeVersion = 0;
+                StoreVersion = 0;
             }
             finally
             {
