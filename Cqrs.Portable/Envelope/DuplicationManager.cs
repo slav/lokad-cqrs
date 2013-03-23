@@ -47,7 +47,7 @@ namespace Lokad.Cqrs.Envelope
 
                         token.WaitHandle.WaitOne(TimeSpan.FromMinutes(5));
                     }
-                }, token);
+                }, token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
         }
     }
 }

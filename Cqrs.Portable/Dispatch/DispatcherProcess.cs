@@ -52,7 +52,7 @@ namespace Lokad.Cqrs.Dispatch
                     {
                         // suppress
                     }
-                }, token);
+                }, token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
         }
 
         void ReceiveMessages(CancellationToken outer)
