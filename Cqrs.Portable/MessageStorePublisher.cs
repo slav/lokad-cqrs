@@ -16,13 +16,15 @@ namespace Lokad.Cqrs
         readonly MessageSender _sender;
         readonly NuclearStorage _storage;
         readonly Predicate<StoreRecord> _recordShouldBePublished;
+        readonly int _waitOnNoWorkInMilliseconds;
 
-        public MessageStorePublisher(MessageStore store, MessageSender sender, NuclearStorage storage, Predicate<StoreRecord> recordShouldBePublished)
+        public MessageStorePublisher(MessageStore store, MessageSender sender, NuclearStorage storage, Predicate<StoreRecord> recordShouldBePublished, int waitOnNoWorkInMilliseconds = 500)
         {
             _store = store;
             _sender = sender;
             _storage = storage;
             _recordShouldBePublished = recordShouldBePublished;
+            _waitOnNoWorkInMilliseconds = waitOnNoWorkInMilliseconds;
         }
 
         public sealed class PublishResult
@@ -73,7 +75,7 @@ namespace Lokad.Cqrs
             var result = new PublishResult(initialPosition, currentPosition, count);
             if (result.Changed)
             {
-                SystemObserver.Notify("[sys ] Message store pointer moved to {0} ({1} published)", result.FinalPosition, publishedCount);
+                SystemObserver.Notify("[sys] Message store pointer moved to {0} ({1} published)", result.FinalPosition, publishedCount);
             }
             return result;
         }
@@ -112,7 +114,7 @@ namespace Lokad.Cqrs
                     if (!publishResult.HasMoreWork)
                     {
                         // wait for a few ms before polling ES again
-                        token.WaitHandle.WaitOne(400);
+                        token.WaitHandle.WaitOne(_waitOnNoWorkInMilliseconds);
                     }
                 }
                 catch (Exception ex)
