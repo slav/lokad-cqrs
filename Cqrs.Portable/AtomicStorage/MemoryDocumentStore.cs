@@ -33,19 +33,24 @@ namespace Lokad.Cqrs.AtomicStorage
 
         public void WriteContents(string bucket, IEnumerable<DocumentRecord> records)
         {
-            var pairs = records.Select(r => new KeyValuePair<string, byte[]>(r.Key, r.Read())).ToArray();
-            _store[bucket] = new ConcurrentDictionary<string, byte[]>(pairs);
+            var pairs = records.Select(r => new KeyValuePair<string, byte[]>(r.Key, r.Read()));
+            var store = _store.GetOrAdd(bucket, s => new ConcurrentDictionary<string, byte[]>());
+
+		  store.Clear();
+
+		  foreach( var pair in pairs)
+		  {
+			  store[ pair.Key ] = pair.Value;
+		  }
         }
 
         public void ResetAll()
         {
             _store.Clear();
         }
-
         public void Reset(string bucketNames)
         {
-            ConcurrentDictionary<string, byte[]> deletedValue;
-            _store.TryRemove(bucketNames, out deletedValue);
+		  _store[bucketNames].Clear();
         }
 
 
