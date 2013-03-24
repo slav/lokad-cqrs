@@ -40,6 +40,22 @@ namespace Cqrs.Portable.Tests.AtomicStorage
         }
     }
 
+    public class NonserializingMemoryDocumentReaderWriterTest : DocumentReaderWriterTest
+    {
+        [SetUp]
+        public void Setup()
+        {
+            var documentStrategy = new DocumentStrategy();
+            var concurrentDictionary = new ConcurrentDictionary<string, object>();
+            _reader = new NonserializingMemoryDocumentReaderWriter<Guid, int>(documentStrategy, concurrentDictionary);
+            _writer = new NonserializingMemoryDocumentReaderWriter<Guid, int>(documentStrategy, concurrentDictionary);
+            _testClassReader = new NonserializingMemoryDocumentReaderWriter<unit, Test1>(documentStrategy, concurrentDictionary);
+            _testClassWtiter = new NonserializingMemoryDocumentReaderWriter<unit, Test1>(documentStrategy, concurrentDictionary);
+            _guidKeyClassReader = new NonserializingMemoryDocumentReaderWriter<Guid, Test1>(documentStrategy, concurrentDictionary);
+            _guidKeyClassWriter = new NonserializingMemoryDocumentReaderWriter<Guid, Test1>(documentStrategy, concurrentDictionary);
+        }
+    }
+
     public abstract class DocumentReaderWriterTest
     {
         public IDocumentReader<Guid, int> _reader;

@@ -51,6 +51,8 @@
     <Compile Include="AtomicStorage\IDocumentWriter.cs" />
     <Compile Include="AtomicStorage\MemoryDocumentReaderWriter.cs" />
     <Compile Include="AtomicStorage\MemoryDocumentStore.cs" />
+    <Compile Include="AtomicStorage\NonserializingMemoryDocumentReaderWriter.cs" />
+    <Compile Include="AtomicStorage\NonserializingMemoryDocumentStore.cs" />
     <Compile Include="AtomicStorage\NuclearStorage.cs" />
     <Compile Include="AtomicStorage\NuclearStorageExtensions.cs" />
     <Compile Include="Build\CqrsEngineBuilder.cs" />
@@ -87,6 +89,8 @@
     <Compile Include="Maybe.cs" />
     <Compile Include="MessageStore.cs" />
     <Compile Include="MessageStorePublisher.cs" />
+    <Compile Include="NonserializingMemoryStorage.cs" />
+    <Compile Include="NonserializingMemoryStorageConfig.cs" />
     <Compile Include="Partition\Events.cs" />
     <Compile Include="Partition\FileQueueReader.cs" />
     <Compile Include="Partition\FileQueueWriter.cs" />
