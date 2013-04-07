@@ -7,7 +7,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cqrs.AtomicStorage
@@ -85,13 +87,29 @@ namespace Lokad.Cqrs.AtomicStorage
 
         public void WriteContents(string bucket, IEnumerable<DocumentRecord> records)
         {
-            var cloudBlobDirectory = _client.GetBlobDirectoryReference(bucket);
+	        var cloudBlobDirectory = this._client.GetBlobDirectoryReference( bucket );
 
-            records.AsParallel()
-                .WithDegreeOfParallelism(Environment.ProcessorCount * 12)
-                .ForAll(atomicRecord => cloudBlobDirectory
-                    .GetBlobReference(atomicRecord.Key)
-                    .UploadByteArray(atomicRecord.Read()));
+	        var memoryStreams = new List< MemoryStream >();
+	        var tasks = new List< Task >();
+	        try
+	        {
+		        foreach( var record in records )
+		        {
+			        var data = record.Read();
+			        var ms = new MemoryStream( data );
+			        memoryStreams.Add( ms );
+			        var blob = cloudBlobDirectory.GetBlobReference( record.Key );
+			        tasks.Add( Task.Factory.FromAsync( blob.BeginUploadFromStream( ms, null, null ), blob.EndUploadFromStream ) );
+		        }
+		        Task.WaitAll( tasks.ToArray() );
+	        }
+	        finally
+	        {
+		        foreach( var ms in memoryStreams )
+		        {
+			        ms.Dispose();
+		        }
+	        }
         }
 
         

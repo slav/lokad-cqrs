@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.AccessControl;
+using System.Threading.Tasks;
 
 namespace Lokad.Cqrs.AtomicStorage
 {
@@ -65,17 +67,26 @@ namespace Lokad.Cqrs.AtomicStorage
             var buck = Path.Combine(_folderPath, bucket);
             if (!Directory.Exists(buck))
                 Directory.CreateDirectory(buck);
-            foreach (var pair in records)
+
+            var tasks = new List< Task >();
+            foreach( var record in records )
             {
-                var recordPath = Path.Combine(buck, pair.Key);
-                
-                var path = Path.GetDirectoryName(recordPath) ?? "";
-                if (!Directory.Exists(path))
+                var recordPath = Path.Combine( buck, record.Key );
+
+                var path = Path.GetDirectoryName( recordPath ) ?? "";
+                if( !Directory.Exists( path ) )
+                    Directory.CreateDirectory( path );
+                var data = record.Read();
+                using( var fs = new FileStream( recordPath, FileMode.Create, FileSystemRights.CreateFiles, FileShare.None, data.Length, FileOptions.Asynchronous ) )
                 {
-                    Directory.CreateDirectory(path);
+                    tasks.Add( Task.Factory.FromAsync( fs.BeginWrite( data, 0, data.Length, null, null ),
+                        r => {
+                            fs.EndWrite( r );
+                            fs.Flush();
+                        } ) );
                 }
-                File.WriteAllBytes(recordPath, pair.Read());
             }
+		Task.WaitAll( tasks.ToArray() );
         }
 
         public void ResetAll()

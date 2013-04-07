@@ -41,7 +41,7 @@ namespace Cqrs.Azure.Tests.AtomicStorage
         public void Teardown()
         {
             _container.Delete();
-            _sampleDocContainer.Delete();
+//            _sampleDocContainer.Delete();
         }
 
         [Test]
@@ -63,6 +63,8 @@ namespace Cqrs.Azure.Tests.AtomicStorage
                 {
                     new DocumentRecord("first", () => Encoding.UTF8.GetBytes("test message 1")),
                     new DocumentRecord("second", () => Encoding.UTF8.GetBytes("test message 2")),
+                    new DocumentRecord("3rd", () => Encoding.UTF8.GetBytes("test message 3")),
+                    new DocumentRecord("4th", () => Encoding.UTF8.GetBytes("test message 4")),
                 };
             _store.WriteContents(_name, records);
 
