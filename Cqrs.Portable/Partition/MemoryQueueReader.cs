@@ -48,7 +48,7 @@ namespace Lokad.Cqrs.Partition
                 // timer will be responsible for publishing back.
 
                 byte[] envelope;
-                var result = BlockingCollection<byte[]>.TakeFromAny(_queues, out envelope);
+                var result = BlockingCollection<byte[]>.TakeFromAny(_queues, out envelope, token);
                 if (result >= 0)
                 {
                     context = new MessageTransportContext(result, envelope, _names[result]);
