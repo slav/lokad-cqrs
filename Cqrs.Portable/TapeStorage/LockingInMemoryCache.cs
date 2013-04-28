@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,8 +13,8 @@ namespace Lokad.Cqrs.TapeStorage
     public sealed class LockingInMemoryCache
     {
         readonly ReaderWriterLockSlim _thread = new ReaderWriterLockSlim();
-        ConcurrentDictionary<string, DataWithKey[]> _cacheByKey = new ConcurrentDictionary<string, DataWithKey[]>();
-        DataWithKey[] _cacheFull = new DataWithKey[0];
+        ConcurrentDictionary<string, List< DataWithKey >> _cacheByKey = new ConcurrentDictionary<string, List< DataWithKey >>();
+        List< DataWithKey > _cacheFull = new List< DataWithKey >();
 
         public void LoadHistory(IEnumerable<StorageFrameDecoded> sfd)
         {
@@ -23,7 +24,7 @@ namespace Lokad.Cqrs.TapeStorage
                 if (StoreVersion != 0)
                     throw new InvalidOperationException("Must clear cache before loading history");
 
-                _cacheFull = new DataWithKey[0];
+                _cacheFull = new List< DataWithKey >();
 
                 // [abdullin]: known performance problem identified by Nicolas Mehlei
                 // creating new immutable array on each line will kill performance
@@ -35,6 +36,10 @@ namespace Lokad.Cqrs.TapeStorage
                 long newStoreVersion = 0;
                 foreach (var record in sfd)
                 {
+                    newStoreVersion += 1;
+
+			    if( record.Name == "audit")
+				    continue;
 
                     List<DataWithKey> list;
                     if (!streamPointerBuilder.TryGetValue(record.Name, out list))
@@ -42,7 +47,6 @@ namespace Lokad.Cqrs.TapeStorage
                         streamPointerBuilder.Add(record.Name, list = new List<DataWithKey>());
                     }
 
-                    newStoreVersion += 1;
                     var newStreamVersion = list.Count + 1;
 
                     var data = new DataWithKey(record.Name, record.Bytes, newStreamVersion, newStoreVersion);
@@ -50,25 +54,14 @@ namespace Lokad.Cqrs.TapeStorage
                     cacheFullBuilder.Add(data);
                 }
 
-                _cacheFull = cacheFullBuilder.ToArray();
-                _cacheByKey = new ConcurrentDictionary<string, DataWithKey[]>(streamPointerBuilder.Select(p => new KeyValuePair<string, DataWithKey[]>(p.Key, p.Value.ToArray())));
+                _cacheFull = cacheFullBuilder;
+                _cacheByKey = new ConcurrentDictionary<string, List< DataWithKey >>(streamPointerBuilder.Select(p => new KeyValuePair<string, List< DataWithKey >>(p.Key, p.Value)));
                 StoreVersion = newStoreVersion;
             }
             finally
             {
                 _thread.ExitWriteLock();
             }
-        }
-
-        static T[] ImmutableAdd<T>(T[] source, T item)
-        {
-            var copy = new T[source.Length + 1];
-
-            Array.Copy(source, copy, source.Length);
-            copy[source.Length] = item;
-
-
-            return copy;
         }
 
         public long StoreVersion { get; private set; }
@@ -81,8 +74,8 @@ namespace Lokad.Cqrs.TapeStorage
 
             try
             {
-                var list = _cacheByKey.GetOrAdd(streamName, s => new DataWithKey[0]);
-                var actualStreamVersion = list.Length;
+                var list = _cacheByKey.GetOrAdd(streamName, s => new List< DataWithKey >());
+                var actualStreamVersion = list.Count;
 
                 if (expectedStreamVersion >= 0)
                 {
@@ -95,12 +88,13 @@ namespace Lokad.Cqrs.TapeStorage
                 commit(newStreamVersion, newStoreVersion);
 
                 // update in-memory cache only after real commit completed
-
-                
-                var dataWithKey = new DataWithKey(streamName, data, newStreamVersion, newStoreVersion);
-                _cacheFull = ImmutableAdd(_cacheFull, dataWithKey);
-                _cacheByKey.AddOrUpdate(streamName, s => new[] { dataWithKey }, (s, records) => ImmutableAdd(records, dataWithKey));
-                StoreVersion = newStoreVersion;
+	            if( streamName != "audit" )
+	            {
+		            var dataWithKey = new DataWithKey( streamName, data, newStreamVersion, newStoreVersion );
+		            _cacheFull.Add( dataWithKey );
+		            _cacheByKey.GetOrAdd( streamName, s => new List< DataWithKey > { dataWithKey } ).Add( dataWithKey );
+	            }
+	            StoreVersion = newStoreVersion;
 
             }
             finally
@@ -120,9 +114,8 @@ namespace Lokad.Cqrs.TapeStorage
             if (maxCount <= 0)
                 throw new ArgumentOutOfRangeException("maxCount", "Must be more than zero.");
 
-            // no lock is needed.
-            DataWithKey[] list;
-            var result = _cacheByKey.TryGetValue(streamName, out list) ? list : Enumerable.Empty<DataWithKey>();
+            List< DataWithKey > list;
+            var result = new LockedListWrapper< DataWithKey >( _cacheByKey.TryGetValue(streamName, out list) ? list : new List<DataWithKey>() );
 
             return result.Where(version => version.StreamVersion > afterStreamVersion).Take(maxCount);
 
@@ -136,9 +129,7 @@ namespace Lokad.Cqrs.TapeStorage
             if (maxCount <= 0)
                 throw new ArgumentOutOfRangeException("maxCount", "Must be more than zero.");
 
-
-            // collection is immutable so we don't care about locks
-            return _cacheFull.Where(key => key.StoreVersion > afterStoreVersion).Take(maxCount);
+            return new LockedListWrapper< DataWithKey >( _cacheFull ).Where(key => key.StoreVersion > afterStoreVersion).Take(maxCount);
         }
 
         public void Clear(Action executeWhenCommitting)
@@ -147,7 +138,7 @@ namespace Lokad.Cqrs.TapeStorage
             try
             {
                 executeWhenCommitting();
-                _cacheFull = new DataWithKey[0];
+                _cacheFull = new List< DataWithKey >();
                 _cacheByKey.Clear();
                 StoreVersion = 0;
             }
@@ -157,4 +148,101 @@ namespace Lokad.Cqrs.TapeStorage
             }
         }
     }
+
+	public class LockedListWrapper< T > : IEnumerable< T >
+	{
+		public List< T > List { get; private set; }
+		public int Count { get; private set; }
+
+		public LockedListWrapper( List< T > list )
+		{
+			this.List = list;
+			this.Count = list.Count;
+		}
+
+		public IEnumerator< T > GetEnumerator()
+		{
+			return new LockedListEnumerator< T >( List, Count );
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return this.GetEnumerator();
+		}
+	}
+
+	public struct LockedListEnumerator< T > : IEnumerator< T >, IDisposable, IEnumerator
+	{
+		private List< T > _list;
+		private int _index;
+		private T _current;
+		private int _length;
+
+		/// <summary>
+		/// Gets the element at the current position of the enumerator.
+		/// </summary>
+		/// 
+		/// <returns>
+		/// The element in the <see cref="T:System.Collections.Generic.List`1"/> at the current position of the enumerator.
+		/// </returns>
+		public T Current
+		{
+			get { return this._current; }
+		}
+
+		object IEnumerator.Current
+		{
+			get
+			{
+				if( this._index == 0 || this._index >= this._length + 1 )
+					throw new InvalidOperationException( "Current is outside of the accessible index" );
+				return this.Current;
+			}
+		}
+
+		public LockedListEnumerator( List< T > list, int length )
+		{
+			this._list = list;
+			this._index = 0;
+			this._length = length;
+			this._current = default ( T );
+		}
+
+		/// <summary>
+		/// Releases all resources used by the <see cref="T:System.Collections.Generic.List`1.Enumerator"/>.
+		/// </summary>
+		public void Dispose()
+		{
+		}
+
+		/// <summary>
+		/// Advances the enumerator to the next element of the <see cref="T:System.Collections.Generic.List`1"/>.
+		/// </summary>
+		/// 
+		/// <returns>
+		/// true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
+		/// </returns>
+		/// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
+		public bool MoveNext()
+		{
+			if( ( uint )this._index >= ( uint )this._length )
+				return this.MoveBeyondLength();
+			this._current = this._list[ this._index ];
+			++this._index;
+			return true;
+		}
+
+		private bool MoveBeyondLength()
+		{
+			this._index = this._index + 1;
+			this._current = default ( T );
+			return false;
+		}
+
+		void IEnumerator.Reset()
+		{
+			this._index = 0;
+			this._current = default ( T );
+		}
+	}
 }
