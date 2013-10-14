@@ -10,8 +10,11 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Lokad.Cqrs</RootNamespace>
     <AssemblyName>Lokad.Cqrs.Portable</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,6 +24,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,17 +33,52 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Lokad.Cqrs.Portable.xml</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Specs|AnyCPU'">
+    <OutputPath>bin\Specs\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CuttingEdge.Conditions, Version=1.2.0.11174, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\CuttingEdge.Conditions.1.2.0.0\lib\NET35\CuttingEdge.Conditions.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil">
+      <HintPath>..\..\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Mdb">
+      <HintPath>..\..\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Mdb.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Pdb">
+      <HintPath>..\..\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Pdb.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Rocks">
+      <HintPath>..\..\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Rocks.dll</HintPath>
+    </Reference>
+    <Reference Include="Netco, Version=1.3.1.0, Culture=neutral, PublicKeyToken=9d732c15ac2ec2c9, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Netco.1.3.1\lib\net45\Netco.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Net" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Transactions" />
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AP.cs" />
     <Compile Include="AtomicStorage\AddOrUpdateHint.cs" />
+    <Compile Include="AtomicStorage\CachingDocumentReader.cs" />
+    <Compile Include="AtomicStorage\CachingDocumentStore.cs" />
     <Compile Include="AtomicStorage\ExtendDocumentReader.cs" />
     <Compile Include="AtomicStorage\ExtendDocumentWriter.cs" />
     <Compile Include="AtomicStorage\FileDocumentReaderWriter.cs" />
@@ -100,6 +139,15 @@
     <Compile Include="Partition\MemoryQueueWriter.cs" />
     <Compile Include="Partition\MessageTransportContext.cs" />
     <Compile Include="Partition\StatelessFileQueueReader.cs" />
+    <Compile Include="Projections\BufferedDocumentStore.cs" />
+    <Compile Include="Projections\BufferedDocumentWriter.cs" />
+    <Compile Include="Projections\EventsChasingService.cs" />
+    <Compile Include="Projections\PartitionedProjectionsInfo.cs" />
+    <Compile Include="Projections\ProjectionCheckpoint.cs" />
+    <Compile Include="Projections\ProjectionHash.cs" />
+    <Compile Include="Projections\ProjectionInfo.cs" />
+    <Compile Include="Projections\ProjectionsRebuilder.cs" />
+    <Compile Include="Projections\ProjectionsService.cs" />
     <Compile Include="RedirectToCommand.cs" />
     <Compile Include="MessageSender.cs" />
     <Compile Include="DataStreams\FileStreamContainer.cs" />
@@ -107,6 +155,7 @@
     <Compile Include="DataStreams\IStreamRoot.cs" />
     <Compile Include="DataStreams\Exceptions.cs" />
     <Compile Include="DataStreams\BinaryStreams.cs" />
+    <Compile Include="RetryPolicies.cs" />
     <Compile Include="StorageFramesEvil.cs" />
     <Compile Include="SystemObserver.cs" />
     <Compile Include="TapeStorage\FileAppendOnlyStore.cs" />
@@ -116,12 +165,14 @@
     <Compile Include="unit.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="ReadMe.markdown" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

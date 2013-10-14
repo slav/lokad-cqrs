@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Text;
+using Netco.Logging;
 
 namespace Lokad.Cqrs
 {
@@ -113,7 +114,7 @@ namespace Lokad.Cqrs
             }
             catch (Exception ex)
             {
-                Trace.WriteLine(ex);
+                NetcoLogger.GetLogger( typeof( StorageFramesEvil ) ).Error( ex, "ReadFrame encountered error" );
                 // Auto-clean?
                 return false;
             }

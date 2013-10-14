@@ -4,6 +4,7 @@ using System.Runtime.Serialization;
 using System.Threading;
 using Lokad.Cqrs.AtomicStorage;
 using System.Linq;
+using Netco.Logging;
 
 namespace Lokad.Cqrs
 {
@@ -12,15 +13,17 @@ namespace Lokad.Cqrs
     /// </summary>
     public sealed class MessageStorePublisher
     {
-        readonly MessageStore _store;
+	    private readonly string _name;
+	    readonly MessageStore _store;
         readonly MessageSender _sender;
         readonly NuclearStorage _storage;
         readonly Predicate<StoreRecord> _recordShouldBePublished;
         readonly int _waitOnNoWorkInMilliseconds;
 
-        public MessageStorePublisher(MessageStore store, MessageSender sender, NuclearStorage storage, Predicate<StoreRecord> recordShouldBePublished, int waitOnNoWorkInMilliseconds = 500)
+        public MessageStorePublisher( string name, MessageStore store, MessageSender sender, NuclearStorage storage, Predicate< StoreRecord > recordShouldBePublished, int waitOnNoWorkInMilliseconds = 500 )
         {
-            _store = store;
+	        _name = name;
+	        _store = store;
             _sender = sender;
             _storage = storage;
             _recordShouldBePublished = recordShouldBePublished;
@@ -75,7 +78,7 @@ namespace Lokad.Cqrs
             var result = new PublishResult(initialPosition, currentPosition, count);
             if (result.Changed)
             {
-                SystemObserver.Notify("[sys] Message store pointer moved to {0} ({1} published)", result.FinalPosition, publishedCount);
+                SystemObserver.Notify("{0}\t[sys] Message store pointer moved to {1} ({2} published)", _name, result.FinalPosition, publishedCount);
             }
             return result;
         }
@@ -121,7 +124,7 @@ namespace Lokad.Cqrs
                 {
                     // we messed up, roll back
                     currentPosition = null;
-                    Trace.WriteLine(ex);
+                    this.Log().Error( ex, "Message publishing encountered error" );
                     token.WaitHandle.WaitOne(5000);
                 }
             }
@@ -132,13 +135,13 @@ namespace Lokad.Cqrs
             var result = _storage.GetSingletonOrNew<PublishCounter>();
             if (result.Position != 0)
             {
-                SystemObserver.Notify("Continuing work with existing event store");
+                SystemObserver.Notify( _name + "\tContinuing work with existing event store");
                 return;
             }
             var store = _store.EnumerateAllItems(0, 100).ToArray();
             if (store.Length == 0)
             {
-                SystemObserver.Notify("Opening new event stream");
+                SystemObserver.Notify( _name + "\tOpening new event stream");
                 //_sender.SendHashed(new EventStreamStarted());
                 return;
             }

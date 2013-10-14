@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Lokad.Cqrs.TapeStorage
 {
@@ -47,32 +49,47 @@ namespace Lokad.Cqrs.TapeStorage
             _cache.LoadHistory(EnumerateHistory());
         }
 
-        IEnumerable<StorageFrameDecoded> EnumerateHistory()
-        {
-            // cleanup old pending files
-            // load indexes
-            // build and save missing indexes
-            var datFiles = _info.EnumerateFiles("*.dat");
+	    IEnumerable< StorageFrameDecoded > EnumerateHistory()
+	    {
+		    // cleanup old pending files
+		    // load indexes
+		    // build and save missing indexes
+		    var datFiles = _info.EnumerateFiles( "*.dat" );
+		    var fileFrameCollections = new List< BlockingCollection< StorageFrameDecoded > >();
 
-            foreach (var fileInfo in datFiles.OrderBy(fi => fi.Name))
-            {
-                // quick cleanup
-                if (fileInfo.Length == 0)
-                {
-                    fileInfo.Delete();
-                    continue;
-                }
+		    foreach( var fileInfo in datFiles.OrderBy( fi => fi.Name ) )
+		    {
+			    // quick cleanup
+			    if( fileInfo.Length == 0 )
+			    {
+				    fileInfo.Delete();
+				    continue;
+			    }
 
-                using (var reader = fileInfo.OpenRead())
-                {
-                    StorageFrameDecoded result;
-                    while (StorageFramesEvil.TryReadFrame(reader, out result))
-                    {
-                        yield return result;
-                    }
-                }
-            }
-        }
+			    var fileFrames = new BlockingCollection< StorageFrameDecoded >();
+			    fileFrameCollections.Add( fileFrames );
+
+			    using( var reader = new FileStream( fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, FileOptions.Asynchronous ) )
+			    {
+				    byte[] buffer = new byte[ fileInfo.Length ];
+				    Task.Factory.FromAsync( reader.BeginRead( buffer, 0, buffer.Length, null, null ),
+					    r =>
+						    {
+							    reader.EndRead( r );
+							    using( var ms = new MemoryStream( buffer ) )
+							    {
+								    StorageFrameDecoded result;
+								    while( StorageFramesEvil.TryReadFrame( ms, out result ) )
+									    fileFrames.Add( result );
+							    }
+
+							    fileFrames.CompleteAdding();
+						    } );
+			    }
+		    }
+
+		    return fileFrameCollections.SelectMany( fileFrameCollection => fileFrameCollection.GetConsumingEnumerable() );
+	    }
 
 
         public void Dispose()

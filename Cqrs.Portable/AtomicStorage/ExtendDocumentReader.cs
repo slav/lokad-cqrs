@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Lokad.Cqrs.AtomicStorage
 {
@@ -45,5 +46,26 @@ namespace Lokad.Cqrs.AtomicStorage
             }
             return Maybe<TSingleton>.Empty;
         }
+
+	    public static async Task< TEntity > LoadAsync< TKey, TEntity >( this IDocumentReader< TKey, TEntity > self, TKey key )
+	    {
+		    var entityMaybe = await self.GetAsync( key ).ConfigureAwait( false );
+		    if( entityMaybe.HasValue )
+			    return entityMaybe.Value;
+		    var txt = string.Format( "Failed to load '{0}' with key '{1}'.", typeof( TEntity ).Name, key );
+		    throw new InvalidOperationException( txt );
+	    }
+
+	    public static async Task< TView > GetOrNewAsync< TView >( this IDocumentReader< unit, TView > reader )
+		    where TView : new()
+	    {
+		    var entityMaybe = await reader.GetAsync( unit.it ).ConfigureAwait( false );
+		    return entityMaybe.GetValue( new TView() );
+	    }
+
+	    public static Task< Maybe< TSingleton > > GetAsync< TSingleton >( this IDocumentReader< unit, TSingleton > reader )
+	    {
+		    return reader.GetAsync( unit.it );
+	    }
     }
 }

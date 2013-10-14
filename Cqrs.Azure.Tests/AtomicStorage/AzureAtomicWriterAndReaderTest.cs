@@ -8,221 +8,371 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 using Lokad.Cqrs;
 using Lokad.Cqrs.AtomicStorage;
-using Microsoft.WindowsAzure;
-using Microsoft.WindowsAzure.StorageClient;
+using Microsoft.WindowsAzure.Storage.Blob;
 using NUnit.Framework;
 using ProtoBuf;
 
 namespace Cqrs.Azure.Tests.AtomicStorage
 {
-    public class AzureAtomicWriterAndReaderTest
-    {
-        AzureAtomicWriter<Guid, TestView> _writer;
-        DocumentStrategy _documentStrategy;
-        AzureAtomicReader<Guid, TestView> _reader;
-        CloudBlobClient _cloudBlobClient;
-        string name;
-        private bool _container;
-        private CloudBlobContainer _cloudBlobContainer;
+	public class AzureAtomicWriterAndReaderTest
+	{
+		private AzureAtomicWriter< Guid, TestView > _writer;
+		private DocumentStrategy _documentStrategy;
+		private AzureAtomicReader< Guid, TestView > _reader;
+		private CloudBlobClient _cloudBlobClient;
+		private string name;
+		private CloudBlobContainer _cloudBlobContainer;
 
-        [SetUp]
-        public void Setup()
-        {
-            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
-            name = Guid.NewGuid().ToString().ToLowerInvariant();
-            _cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-           _cloudBlobContainer = _cloudBlobClient.GetBlobDirectoryReference(name).Container;
-            _cloudBlobContainer.CreateIfNotExist();
-            _documentStrategy = new DocumentStrategy(name);
-            _writer = new AzureAtomicWriter<Guid, TestView>(_cloudBlobClient, _documentStrategy);
-            _reader = new AzureAtomicReader<Guid, TestView>(_cloudBlobClient, _documentStrategy);
-        }
+		[ SetUp ]
+		public void Setup()
+		{
+			var cloudStorageAccount = ConnectionConfig.StorageAccount;
+			this.name = Guid.NewGuid().ToString().ToLowerInvariant();
+			this._cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
+			this._cloudBlobContainer = this._cloudBlobClient.GetContainerReference( this.name );
+			this._cloudBlobContainer.CreateIfNotExists();
+			this._documentStrategy = new DocumentStrategy( this.name );
+			this._writer = new AzureAtomicWriter< Guid, TestView >( this._cloudBlobClient, this._documentStrategy );
+			this._reader = new AzureAtomicReader< Guid, TestView >( this._cloudBlobClient, this._documentStrategy );
+		}
 
-        [TearDown]
-        public void TearDown()
-        {
-            _cloudBlobContainer.Delete();
-        }
+		[ TearDown ]
+		public void TearDown()
+		{
+			this._cloudBlobContainer.Delete();
+		}
 
-        [Test]
-        public void when_delete_than_not_key()
-        {
-            Assert.IsFalse(_writer.TryDelete(Guid.NewGuid()));
-        }
+		[ Test ]
+		public void when_delete_than_not_key()
+		{
+			Assert.IsFalse( this._writer.TryDelete( Guid.NewGuid() ) );
+		}
 
-        [Test]
-        public void when_delete_than_exist_key()
-        {
-            _writer.InitializeIfNeeded();
-            var id = Guid.NewGuid();
-            _writer.AddOrUpdate(id, () => new TestView(id)
-                , old =>
-                    {
-                        old.Data++;
-                        return old;
-                    }
-                , AddOrUpdateHint.ProbablyExists);
+		[ Test ]
+		public void when_delete_than_exist_key()
+		{
+			this._writer.InitializeIfNeeded();
+			var id = Guid.NewGuid();
+			this._writer.AddOrUpdate( id, () => new TestView( id )
+				, old =>
+				{
+					old.Data++;
+					return old;
+				}
+				, AddOrUpdateHint.ProbablyExists );
 
-            Assert.IsTrue(_writer.TryDelete(id));
-        }
+			Assert.IsTrue( this._writer.TryDelete( id ) );
+		}
 
-        [Test]
-        public void when_write_read()
-        {
-            var id = Guid.NewGuid();
-            _writer.AddOrUpdate(id, () => new TestView(id)
-                , old =>
-                    {
-                        old.Data++;
-                        return old;
-                    }
-                , AddOrUpdateHint.ProbablyExists);
+		[ Test ]
+		public async Task when_delete_than_not_key_async()
+		{
+			Assert.IsFalse( await this._writer.TryDeleteAsync( Guid.NewGuid() ) );
+		}
 
-            TestView entity;
-            var result = _reader.TryGet(id, out entity);
+		[ Test ]
+		public async Task when_delete_than_exist_key_async()
+		{
+			this._writer.InitializeIfNeeded();
+			var id = Guid.NewGuid();
+			this._writer.AddOrUpdate( id, () => new TestView( id )
+				, old =>
+				{
+					old.Data++;
+					return old;
+				}
+				, AddOrUpdateHint.ProbablyExists );
 
-            Assert.IsTrue(result);
-            Assert.AreEqual(id, entity.Id);
-            Assert.AreEqual(0, entity.Data);
-        }
+			Assert.IsTrue( await this._writer.TryDeleteAsync( id ) );
+		}
 
-        [Test]
-        public void when_read_nothing_key()
-        {
-            var id = Guid.NewGuid();
+		[ Test ]
+		public void when_write_read()
+		{
+			var id = Guid.NewGuid();
+			this._writer.AddOrUpdate( id, () => new TestView( id )
+				, old =>
+				{
+					old.Data++;
+					return old;
+				}
+				, AddOrUpdateHint.ProbablyExists );
 
-            TestView entity;
-            var result = _reader.TryGet(id, out entity);
+			TestView entity;
+			var result = this._reader.TryGet( id, out entity );
 
-            Assert.IsFalse(result);
-        }
+			Assert.IsTrue( result );
+			Assert.AreEqual( id, entity.Id );
+			Assert.AreEqual( 10, entity.Data );
+		}
 
-        [Test]
-        public void when_write_exist_key_and_read()
-        {
-            var id = Guid.NewGuid();
-            _writer.AddOrUpdate(id, () => new TestView(id)
-                , old =>
-                {
-                    old.Data++;
-                    return old;
-                }
-                , AddOrUpdateHint.ProbablyExists);
-            _writer.AddOrUpdate(id, () => new TestView(id)
-                , old =>
-                {
-                    old.Data++;
-                    return old;
-                }
-                , AddOrUpdateHint.ProbablyExists);
+		[ Test ]
+		public void when_write_read_async()
+		{
+			var id = Guid.NewGuid();
+			this._writer.AddOrUpdate( id, () => new TestView( id )
+				, old =>
+				{
+					old.Data++;
+					return old;
+				}
+				, AddOrUpdateHint.ProbablyExists );
 
-            TestView entity;
-            var result = _reader.TryGet(id, out entity);
+			var getTask = this._reader.GetAsync( id );
+			getTask.Wait( 5000 );
 
-            Assert.IsTrue(result);
-            Assert.AreEqual(id, entity.Id);
-            Assert.AreEqual(1, entity.Data);
-        }
-    }
+			Assert.IsTrue( getTask.Result.HasValue );
+			var entity = getTask.Result.Value;
 
-    [DataContract(Name = "test-view")]
-    public class TestView
-    {
-        [DataMember(Order = 1)]
-        public Guid Id { get; set; }
-        [DataMember(Order = 2)]
-        public int Data { get; set; }
+			Assert.AreEqual( id, entity.Id );
+			Assert.AreEqual( 10, entity.Data );
+		}
 
-        public TestView()
-        { }
+		[ Test ]
+		public void when_read_nothing_key()
+		{
+			var id = Guid.NewGuid();
 
-        public TestView(Guid id)
-        {
-            Id = id;
-            Data = 0;
-        }
-    }
+			TestView entity;
+			var result = this._reader.TryGet( id, out entity );
 
-    public sealed class DocumentStrategy : IDocumentStrategy
-    {
-        private string _uniqName;
+			Assert.IsFalse( result );
+		}
 
-        public DocumentStrategy(string uniqName)
-        {
-            _uniqName = uniqName;
-        }
+		[ Test ]
+		public void when_read_nothing_key_async()
+		{
+			var id = Guid.NewGuid();
 
-        public void Serialize<TEntity>(TEntity entity, Stream stream)
-        {
-            // ProtoBuf must have non-zero files
-            stream.WriteByte(42);
-            Serializer.Serialize(stream, entity);
-        }
+			var getTask = this._reader.GetAsync( id );
+			getTask.Wait( 5000 );
 
-        public TEntity Deserialize<TEntity>(Stream stream)
-        {
-            var signature = stream.ReadByte();
+			Assert.IsFalse( getTask.Result.HasValue );
+		}
 
-            if (signature != 42)
-                throw new InvalidOperationException("Unknown view format");
+		[ Test ]
+		public void when_write_exist_key_and_read()
+		{
+			var id = Guid.NewGuid();
+			this._writer.AddOrUpdate( id, () => new TestView( id )
+				, old =>
+				{
+					old.Data++;
+					return old;
+				}
+				, AddOrUpdateHint.ProbablyExists );
+			this._writer.AddOrUpdate( id, () => new TestView( id )
+				, old =>
+				{
+					old.Data++;
+					return old;
+				}
+				, AddOrUpdateHint.ProbablyExists );
 
-            return Serializer.Deserialize<TEntity>(stream);
-        }
+			TestView entity;
+			var result = this._reader.TryGet( id, out entity );
 
-        public string GetEntityBucket<TEntity>()
-        {
-            return _uniqName + "/" + NameCache<TEntity>.Name;
-        }
+			Assert.IsTrue( result );
+			Assert.AreEqual( id, entity.Id );
+			Assert.AreEqual( 11, entity.Data );
+		}
 
-        public string GetEntityLocation<TEntity>(object key)
-        {
-            if (key is unit)
-                return NameCache<TEntity>.Name + ".pb";
+		[ Test ]
+		public void when_write_exist_key_and_read_async()
+		{
+			var id = Guid.NewGuid();
+			this._writer.AddOrUpdate( id, () => new TestView( id )
+				, old =>
+				{
+					old.Data++;
+					return old;
+				}
+				, AddOrUpdateHint.ProbablyExists );
+			this._writer.AddOrUpdate( id, () => new TestView( id )
+				, old =>
+				{
+					old.Data++;
+					return old;
+				}
+				, AddOrUpdateHint.ProbablyExists );
 
-            return key.ToString().ToLowerInvariant() + ".pb";
-        }
-    }
+			CheckViewCorrect( id, 11 );
+		}
 
-    static class NameCache<T>
-    {
-        // ReSharper disable StaticFieldInGenericType
-        public static readonly string Name;
-        public static readonly string Namespace;
-        // ReSharper restore StaticFieldInGenericType
-        static NameCache()
-        {
-            var type = typeof(T);
+		[ Test ]
+		public void SaveNew()
+		{
+			//------------ Arrange
+			var id = Guid.NewGuid();
 
-            Name = new string(Splice(type.Name).ToArray()).TrimStart('-');
-            var dcs = type.GetCustomAttributes(false).OfType<DataContractAttribute>().ToArray();
+			//------------ Act
+			this._writer.Save( id, new TestView( id ) );
 
+			//------------ Assert
+			CheckViewCorrect( id );
+		}
 
-            if (dcs.Length <= 0) return;
-            var attribute = dcs.First();
+		[ Test ]
+		public void SaveOverExisting()
+		{
+			//------------ Arrange
+			var id = Guid.NewGuid();
+			this._writer.Save( id, new TestView( id, 145 ) );
 
-            if (!string.IsNullOrEmpty(attribute.Name))
-            {
-                Name = attribute.Name;
-            }
+			//------------ Act
+			this._writer.Save( id, new TestView( id ) );
 
-            if (!string.IsNullOrEmpty(attribute.Namespace))
-            {
-                Namespace = attribute.Namespace;
-            }
-        }
+			//------------ Assert
+			CheckViewCorrect( id );
+		}
+		
+		[ Test ]
+		public async Task SaveNewAsync()
+		{
+			//------------ Arrange
+			var id = Guid.NewGuid();
 
-        static IEnumerable<char> Splice(string source)
-        {
-            foreach (var c in source)
-            {
-                if (char.IsUpper(c))
-                {
-                    yield return '-';
-                }
-                yield return char.ToLower(c);
-            }
-        }
-    }
+			//------------ Act
+			await this._writer.SaveAsync( id, new TestView( id ) );
+
+			//------------ Assert
+			CheckViewCorrect( id );
+		}
+
+		[ Test ]
+		public async Task SaveOverExistingAsync()
+		{
+			//------------ Arrange
+			var id = Guid.NewGuid();
+			this._writer.Save( id, new TestView( id, 145 ) );
+
+			//------------ Act
+			await this._writer.SaveAsync( id, new TestView( id ) );
+
+			//------------ Assert
+			CheckViewCorrect( id );
+		}
+
+		private void CheckViewCorrect( Guid id, int data = 10 )
+		{
+			var view = LoadView( id );
+			Assert.AreEqual( id, view.Id );
+			Assert.AreEqual( data, view.Data );
+		}
+
+		private TestView LoadView( Guid id )
+		{
+			var getTask = this._reader.GetAsync( id );
+			getTask.Wait( 5000 );
+
+			Assert.IsTrue( getTask.Result.HasValue );
+
+			var entity = getTask.Result.Value;
+			return entity;
+		}
+	}
+
+	[ DataContract( Name = "test-view" ) ]
+	public class TestView
+	{
+		[ DataMember( Order = 1 ) ]
+		public Guid Id { get; set; }
+
+		[ DataMember( Order = 2 ) ]
+		public int Data { get; set; }
+
+		public TestView()
+		{
+		}
+
+		public TestView( Guid id )
+		{
+			this.Id = id;
+			this.Data = 10;
+		}
+
+		public TestView( Guid id, int data )
+		{
+			this.Id = id;
+			this.Data = data;
+		}
+	}
+
+	public sealed class DocumentStrategy : IDocumentStrategy
+	{
+		private string _uniqName;
+
+		public DocumentStrategy( string uniqName )
+		{
+			this._uniqName = uniqName;
+		}
+
+		public void Serialize< TEntity >( TEntity entity, Stream stream )
+		{
+			// ProtoBuf must have non-zero files
+			stream.WriteByte( 42 );
+			Serializer.Serialize( stream, entity );
+		}
+
+		public TEntity Deserialize< TEntity >( Stream stream )
+		{
+			var signature = stream.ReadByte();
+
+			if( signature != 42 )
+				throw new InvalidOperationException( "Unknown view format" );
+
+			return Serializer.Deserialize< TEntity >( stream );
+		}
+
+		public string GetEntityBucket< TEntity >()
+		{
+			return this._uniqName + "/" + NameCache< TEntity >.Name;
+		}
+
+		public string GetEntityLocation< TEntity >( object key )
+		{
+			if( key is unit )
+				return NameCache< TEntity >.Name + ".pb";
+
+			return key.ToString().ToLowerInvariant() + ".pb";
+		}
+	}
+
+	internal static class NameCache< T >
+	{
+		// ReSharper disable StaticFieldInGenericType
+		public static readonly string Name;
+		public static readonly string Namespace;
+		// ReSharper restore StaticFieldInGenericType
+		static NameCache()
+		{
+			var type = typeof( T );
+
+			Name = new string( Splice( type.Name ).ToArray() ).TrimStart( '-' );
+			var dcs = type.GetCustomAttributes( false ).OfType< DataContractAttribute >().ToArray();
+
+			if( dcs.Length <= 0 )
+				return;
+			var attribute = dcs.First();
+
+			if( !string.IsNullOrEmpty( attribute.Name ) )
+				Name = attribute.Name;
+
+			if( !string.IsNullOrEmpty( attribute.Namespace ) )
+				Namespace = attribute.Namespace;
+		}
+
+		private static IEnumerable< char > Splice( string source )
+		{
+			foreach( var c in source )
+			{
+				if( char.IsUpper( c ) )
+					yield return '-';
+				yield return char.ToLower( c );
+			}
+		}
+	}
 }

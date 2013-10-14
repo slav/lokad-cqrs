@@ -4,26 +4,25 @@
 #endregion
 
 using System;
-using Microsoft.WindowsAzure;
+using Microsoft.WindowsAzure.Storage;
 
 namespace Cqrs.Azure.Tests
 {
-    public static class ConnectionConfig
-    {
-        public static CloudStorageAccount GetAzureConnnectionString()
-        {
-            if (Environment.GetEnvironmentVariable("Data_Store") != null)
-                return CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("Data_Store"));
+	public static class ConnectionConfig
+	{
+		public static CloudStorageAccount GetAzureConnnectionString()
+		{
+			if( Environment.GetEnvironmentVariable( "Data_Store" ) != null )
+				return CloudStorageAccount.Parse( Environment.GetEnvironmentVariable( "Data_Store" ) );
 
-            return CloudStorageAccount.DevelopmentStorageAccount;
-        }
+			return CloudStorageAccount.DevelopmentStorageAccount;
+		}
 
-        static readonly Lazy<CloudStorageAccount> Connection = new Lazy<CloudStorageAccount>(GetAzureConnnectionString);
+		private static readonly Lazy< CloudStorageAccount > Connection = new Lazy< CloudStorageAccount >( GetAzureConnnectionString );
 
-
-        public static CloudStorageAccount StorageAccount
-        {
-            get { return Connection.Value; }
-        }
-    }
+		public static CloudStorageAccount StorageAccount
+		{
+			get { return Connection.Value; }
+		}
+	}
 }

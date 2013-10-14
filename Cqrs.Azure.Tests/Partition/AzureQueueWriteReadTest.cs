@@ -6,122 +6,125 @@
 using System;
 using System.Text;
 using System.Threading;
+using Lokad.Cqrs;
 using Lokad.Cqrs.Feature.AzurePartition;
 using Lokad.Cqrs.Feature.AzurePartition.Inbox;
 using Lokad.Cqrs.Partition;
-using Microsoft.WindowsAzure;
-using Microsoft.WindowsAzure.StorageClient;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
 using NUnit.Framework;
 
 namespace Cqrs.Azure.Tests.Partition
 {
-    public class AzureQueueWriteReadTest
-    {
-        StatelessAzureQueueReader _statelessReader;
-        AzureQueueReader _queueReader;
-        StatelessAzureQueueWriter _queueWriter;
-        string _name;
-        private CloudBlobClient _cloudBlobClient;
-        private CloudBlobContainer _blobContainer;
+	public class AzureQueueWriteReadTest
+	{
+		private StatelessAzureQueueReader _statelessReader;
+		private AzureQueueReader _queueReader;
+		private StatelessAzureQueueWriter _queueWriter;
+		private string _name;
+		private CloudBlobClient _cloudBlobClient;
+		private CloudBlobContainer _blobContainer;
+		private CloudQueue _queue;
 
+		[ SetUp ]
+		public void Setup()
+		{
+			this._name = Guid.NewGuid().ToString().ToLowerInvariant();
+			var cloudStorageAccount = ConnectionConfig.StorageAccount;
 
-        [SetUp]
-        public void Setup()
-        {
-            _name = Guid.NewGuid().ToString().ToLowerInvariant();
-            CloudStorageAccount cloudStorageAccount = ConnectionConfig.StorageAccount;
+			this._cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
+			this._queue = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference( this._name );
+			var container = this._cloudBlobClient.GetBlobDirectory( this._name );
 
-            _cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            var queue = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference(_name);
-            var container = _cloudBlobClient.GetBlobDirectoryReference(_name);
+			this._blobContainer = this._cloudBlobClient.GetContainerReference( this._name );
+			var poisonQueue = new Lazy< CloudQueue >( () =>
+			{
+				var queueReference = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference( this._name + "-poison" );
+				queueReference.CreateIfNotExists();
+				return queueReference;
+			}, LazyThreadSafetyMode.ExecutionAndPublication );
+			this._statelessReader = new StatelessAzureQueueReader( "azure-read-write-message", this._queue, container, poisonQueue, TimeSpan.FromMinutes( 1 ) );
+			this._queueReader = new AzureQueueReader( new[] { this._statelessReader }, x => TimeSpan.FromMinutes( x ) );
+			this._queueWriter = new StatelessAzureQueueWriter( this._blobContainer, this._queue, "azure-read-write-message" );
+			this._queueWriter.Init();
+		}
 
-            _blobContainer = _cloudBlobClient.GetContainerReference(_name);
-            var poisonQueue = new Lazy<CloudQueue>(() =>
-            {
-                var queueReference = cloudStorageAccount.CreateCloudQueueClient().GetQueueReference(_name + "-poison");
-                queueReference.CreateIfNotExist();
-                return queueReference;
-            }, LazyThreadSafetyMode.ExecutionAndPublication);
-            _statelessReader = new StatelessAzureQueueReader("azure-read-write-message", queue, container, poisonQueue, TimeSpan.FromMinutes(1));
-            _queueReader = new AzureQueueReader(new[] { _statelessReader }, x => TimeSpan.FromMinutes(x));
-            _queueWriter = new StatelessAzureQueueWriter(_blobContainer, queue, "azure-read-write-message");
-            _queueWriter.Init();
-        }
+		[ TearDown ]
+		public void Teardown()
+		{
+			this._blobContainer.Delete();
+			this._queue.Delete();
+		}
 
+		[ Test ]
+		[ ExpectedException( typeof( NullReferenceException ) ) ]
+		public void when_put_null_message()
+		{
+			this._queueWriter.PutMessage( null );
+		}
 
-        [TearDown]
-        public void Teardown()
-        {
-            _blobContainer.Delete();
-        }
+		[ Test ]
+		public void when_get_added_message()
+		{
+			this._queueWriter.PutMessage( Encoding.UTF8.GetBytes( "message" ) );
+			var msg = this._statelessReader.TryGetMessage();
 
-        [Test, ExpectedException(typeof(NullReferenceException))]
-        public void when_put_null_message()
-        {
-            _queueWriter.PutMessage(null);
-        }
+			Assert.AreEqual( GetEnvelopeResultState.Success, msg.State );
+			Assert.AreEqual( "message", Encoding.UTF8.GetString( msg.Message.Unpacked ) );
+			Assert.AreEqual( "azure-read-write-message", msg.Message.QueueName );
+		}
 
-        [Test]
-        public void when_get_added_message()
-        {
-            _queueWriter.PutMessage(Encoding.UTF8.GetBytes("message"));
-            var msg = _statelessReader.TryGetMessage();
+		[ Test ]
+		[ ExpectedException( typeof( ArgumentNullException ) ) ]
+		public void when_ack_null_message()
+		{
+			this._statelessReader.AckMessage( null );
+		}
 
-            Assert.AreEqual(GetEnvelopeResultState.Success, msg.State);
-            Assert.AreEqual("message", Encoding.UTF8.GetString(msg.Message.Unpacked));
-            Assert.AreEqual("azure-read-write-message", msg.Message.QueueName);
-        }
+		[ Test ]
+		public void when_ack_messages_by_name()
+		{
+			this._queueWriter.PutMessage( Encoding.UTF8.GetBytes( "message" ) );
+			var msg = this._statelessReader.TryGetMessage();
 
-        [Test, ExpectedException(typeof(ArgumentNullException))]
-        public void when_ack_null_message()
-        {
-            _statelessReader.AckMessage(null);
-        }
+			var transportContext = new MessageTransportContext(
+				msg.Message.TransportMessage
+				, msg.Message.Unpacked
+				, msg.Message.QueueName );
+			this._statelessReader.AckMessage( transportContext );
+			var msg2 = this._statelessReader.TryGetMessage();
 
-        [Test]
-        public void when_ack_messages_by_name()
-        {
-            _queueWriter.PutMessage(Encoding.UTF8.GetBytes("message"));
-            var msg = _statelessReader.TryGetMessage();
+			Assert.AreEqual( GetEnvelopeResultState.Empty, msg2.State );
+		}
 
-            var transportContext = new MessageTransportContext(
-                msg.Message.TransportMessage
-                , msg.Message.Unpacked
-                , msg.Message.QueueName);
-            _statelessReader.AckMessage(transportContext);
-            var msg2 = _statelessReader.TryGetMessage();
+		[ Test ]
+		public void when_reader_ack_messages()
+		{
+			this._queueWriter.PutMessage( Encoding.UTF8.GetBytes( "message" ) );
+			var msg = this._statelessReader.TryGetMessage();
 
-            Assert.AreEqual(GetEnvelopeResultState.Empty, msg2.State);
-        }
+			var transportContext = new MessageTransportContext(
+				msg.Message.TransportMessage
+				, msg.Message.Unpacked
+				, msg.Message.QueueName );
 
-        [Test]
-        public void when_reader_ack_messages()
-        {
-            _queueWriter.PutMessage(Encoding.UTF8.GetBytes("message"));
-            var msg = _statelessReader.TryGetMessage();
+			this._queueReader.AckMessage( transportContext );
+			var msg2 = this._statelessReader.TryGetMessage();
 
-            var transportContext = new MessageTransportContext(
-                msg.Message.TransportMessage
-                , msg.Message.Unpacked
-                , msg.Message.QueueName);
+			Assert.AreEqual( GetEnvelopeResultState.Empty, msg2.State );
+		}
 
-            _queueReader.AckMessage(transportContext);
-            var msg2 = _statelessReader.TryGetMessage();
+		[ Test ]
+		public void when_reader_take_messages()
+		{
+			this._queueWriter.PutMessage( Encoding.UTF8.GetBytes( "message" ) );
+			MessageTransportContext msg;
+			var cancellationToken = new CancellationToken( false );
+			var result = this._queueReader.TakeMessage( cancellationToken, out msg );
 
-            Assert.AreEqual(GetEnvelopeResultState.Empty, msg2.State);
-        }
-
-        [Test]
-        public void when_reader_take_messages()
-        {
-            _queueWriter.PutMessage(Encoding.UTF8.GetBytes("message"));
-            MessageTransportContext msg;
-            var cancellationToken = new CancellationToken(false);
-            var result = _queueReader.TakeMessage(cancellationToken, out msg);
-
-            Assert.IsTrue(result);
-            Assert.AreEqual("message", Encoding.UTF8.GetString(msg.Unpacked));
-            Assert.AreEqual("azure-read-write-message", msg.QueueName);
-        }
-    }
+			Assert.IsTrue( result );
+			Assert.AreEqual( "message", Encoding.UTF8.GetString( msg.Unpacked ) );
+			Assert.AreEqual( "azure-read-write-message", msg.QueueName );
+		}
+	}
 }

@@ -84,6 +84,7 @@ namespace Lokad.Cqrs
         {
             public Action<object> Call;
             public Type ParameterType;
+		public object @object;
         }
 
         static readonly MethodInfo InternalPreserveStackTraceMethod =
@@ -154,7 +155,8 @@ namespace Lokad.Cqrs
             var wire = new Wire
             {
                 Call = o1 => call(o, o1),
-                ParameterType = type
+                ParameterType = type,
+		    @object = o
             };
             return wire;
         }
@@ -188,9 +190,17 @@ namespace Lokad.Cqrs
             }
             try
             {
+	          var sw = new Stopwatch();
                 foreach (var wire in info)
                 {
+			  sw.Restart();
                     wire.Call(@event);
+			  sw.Stop();
+
+			  var seconds = sw.Elapsed.TotalSeconds;
+
+			  if( seconds > 2 && wire.@object != null )
+				SystemObserver.Notify( "[Warn]: {0}\ttook {1} seconds to process event {2}", wire.@object.GetType().Name, seconds, @event.ToString() );
                 }
             }
             catch (TargetInvocationException ex)

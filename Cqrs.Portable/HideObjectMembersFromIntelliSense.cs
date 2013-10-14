@@ -71,7 +71,7 @@ namespace Lokad.Cqrs
         [EditorBrowsable(EditorBrowsableState.Never)]
         protected new object MemberwiseClone()
         {
-            return this.MemberwiseClone();
+            return base.MemberwiseClone();
         }
     }
 

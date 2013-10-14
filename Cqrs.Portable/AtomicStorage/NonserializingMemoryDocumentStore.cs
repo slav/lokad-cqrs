@@ -7,6 +7,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Lokad.Cqrs.AtomicStorage
 {
@@ -41,14 +43,34 @@ namespace Lokad.Cqrs.AtomicStorage
 			}
 		}
 
+		public Task WriteContentsAsync( string bucket, IEnumerable< DocumentRecord > records, CancellationToken token )
+		{
+			var pairs = records.Select( r => new KeyValuePair< string, byte[] >( r.Key, r.Read() ) );
+			var store = this._store.GetOrAdd( bucket, s => new ConcurrentDictionary< string, object >() );
+
+			store.Clear();
+
+			foreach( var pair in pairs )
+			{
+				store[ pair.Key ] = pair.Value;
+			}
+			return Task.FromResult( true );
+		}
+
 		public void ResetAll()
 		{
 			this._store.Clear();
 		}
 
-		public void Reset( string bucketNames )
+		public void Reset( string bucket )
 		{
-			this._store[ bucketNames ].Clear();
+			this._store[ bucket ].Clear();
+		}
+
+		public Task ResetAsync( string bucket )
+		{
+			this._store[ bucket ].Clear();
+			return Task.FromResult( true );
 		}
 
 		public IDocumentReader< TKey, TEntity > GetReader< TKey, TEntity >()

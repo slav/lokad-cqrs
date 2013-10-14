@@ -7,147 +7,235 @@ using System.Threading;
 
 namespace Lokad.Cqrs.TapeStorage
 {
-    /// <summary>
-    /// Simple in-memory thread-safe cache
-    /// </summary>
-    public sealed class LockingInMemoryCache
-    {
-        readonly ReaderWriterLockSlim _thread = new ReaderWriterLockSlim();
-        ConcurrentDictionary<string, List< DataWithKey >> _cacheByKey = new ConcurrentDictionary<string, List< DataWithKey >>();
-        List< DataWithKey > _cacheFull = new List< DataWithKey >();
+	/// <summary>
+	/// Simple in-memory thread-safe cache
+	/// </summary>
+	public sealed class LockingInMemoryCache
+	{
+		private readonly ReaderWriterLockSlim _thread = new ReaderWriterLockSlim();
+		private ConcurrentDictionary< string, List< DataWithKey > > _cacheByKey = new ConcurrentDictionary< string, List< DataWithKey > >();
+		private Dictionary< long, DataWithKey > _cacheFull = new Dictionary< long, DataWithKey >();
 
-        public void LoadHistory(IEnumerable<StorageFrameDecoded> sfd)
-        {
-            _thread.EnterWriteLock();
-            try
-            {
-                if (StoreVersion != 0)
-                    throw new InvalidOperationException("Must clear cache before loading history");
+		public void LoadHistory( IEnumerable< StorageFrameDecoded > sfd )
+		{
+			this._thread.EnterWriteLock();
+			try
+			{
+				if( this.StoreVersion != 0 )
+					throw new InvalidOperationException( "Must clear cache before loading history" );
 
-                _cacheFull = new List< DataWithKey >();
+				this._cacheFull = new Dictionary< long, DataWithKey >();
 
-                // [abdullin]: known performance problem identified by Nicolas Mehlei
-                // creating new immutable array on each line will kill performance
-                // We need to at least do some batching here
+				// [abdullin]: known performance problem identified by Nicolas Mehlei
+				// creating new immutable array on each line will kill performance
+				// We need to at least do some batching here
 
-                var cacheFullBuilder = new List<DataWithKey>();
-                var streamPointerBuilder = new Dictionary<string, List<DataWithKey>>();
+				var cacheFullBuilder = new Dictionary< long, DataWithKey >();
+				var streamPointerBuilder = new Dictionary< string, List< DataWithKey > >();
 
-                long newStoreVersion = 0;
-                foreach (var record in sfd)
-                {
-                    newStoreVersion += 1;
+				long newStoreVersion = 0;
+				foreach( var record in sfd )
+				{
+					newStoreVersion += 1;
 
-			    if( record.Name == "audit")
-				    continue;
+					if( record.Name == "audit"  || record.Name == "func" )
+						continue;
 
-                    List<DataWithKey> list;
-                    if (!streamPointerBuilder.TryGetValue(record.Name, out list))
-                    {
-                        streamPointerBuilder.Add(record.Name, list = new List<DataWithKey>());
-                    }
+					List< DataWithKey > list;
+					if( !streamPointerBuilder.TryGetValue( record.Name, out list ) )
+						streamPointerBuilder.Add( record.Name, list = new List< DataWithKey >() );
 
-                    var newStreamVersion = list.Count + 1;
+					var newStreamVersion = list.Count + 1;
 
-                    var data = new DataWithKey(record.Name, record.Bytes, newStreamVersion, newStoreVersion);
-                    list.Add(data);
-                    cacheFullBuilder.Add(data);
-                }
+					var data = new DataWithKey( record.Name, record.Bytes, newStreamVersion, newStoreVersion );
+					list.Add( data );
+					cacheFullBuilder.Add( data.StoreVersion, data );
+				}
 
-                _cacheFull = cacheFullBuilder;
-                _cacheByKey = new ConcurrentDictionary<string, List< DataWithKey >>(streamPointerBuilder.Select(p => new KeyValuePair<string, List< DataWithKey >>(p.Key, p.Value)));
-                StoreVersion = newStoreVersion;
-            }
-            finally
-            {
-                _thread.ExitWriteLock();
-            }
-        }
+				this._cacheFull = cacheFullBuilder;
+				this._cacheByKey = new ConcurrentDictionary< string, List< DataWithKey > >( streamPointerBuilder.Select( p => new KeyValuePair< string, List< DataWithKey > >( p.Key, p.Value ) ) );
+				this.StoreVersion = newStoreVersion;
+			}
+			finally
+			{
+				this._thread.ExitWriteLock();
+			}
+		}
 
-        public long StoreVersion { get; private set; }
+		public long StoreVersion { get; private set; }
 
-        public delegate void OnCommit(long streamVersion, long storeVersion);
+		public delegate void OnCommit( long streamVersion, long storeVersion );
 
-        public void ConcurrentAppend(string streamName, byte[] data, OnCommit commit, long expectedStreamVersion = -1)
-        {
-            _thread.EnterWriteLock();
+		public void ConcurrentAppend( string streamName, byte[] data, OnCommit commit, long expectedStreamVersion = -1 )
+		{
+			this._thread.EnterWriteLock();
 
-            try
-            {
-                var list = _cacheByKey.GetOrAdd(streamName, s => new List< DataWithKey >());
-                var actualStreamVersion = list.Count;
+			try
+			{
+				var list = this._cacheByKey.GetOrAdd( streamName, s => new List< DataWithKey >() );
+				var actualStreamVersion = list.Count;
 
-                if (expectedStreamVersion >= 0)
-                {
-                    if (actualStreamVersion != expectedStreamVersion)
-                        throw new AppendOnlyStoreConcurrencyException(expectedStreamVersion, actualStreamVersion, streamName);
-                }
-                long newStreamVersion = actualStreamVersion + 1;
-                long newStoreVersion = StoreVersion + 1;
+				if( expectedStreamVersion >= 0 )
+				{
+					if( actualStreamVersion != expectedStreamVersion )
+						throw new AppendOnlyStoreConcurrencyException( expectedStreamVersion, actualStreamVersion, streamName );
+				}
+				long newStreamVersion = actualStreamVersion + 1;
+				var newStoreVersion = this.StoreVersion + 1;
 
-                commit(newStreamVersion, newStoreVersion);
+				commit( newStreamVersion, newStoreVersion );
 
-                // update in-memory cache only after real commit completed
-	            if( streamName != "audit" )
-	            {
-		            var dataWithKey = new DataWithKey( streamName, data, newStreamVersion, newStoreVersion );
-		            _cacheFull.Add( dataWithKey );
-		            _cacheByKey.GetOrAdd( streamName, s => new List< DataWithKey > { dataWithKey } ).Add( dataWithKey );
-	            }
-	            StoreVersion = newStoreVersion;
+				// update in-memory cache only after real commit completed
+				if( streamName != "audit" && streamName != "func" )
+				{
+					var dataWithKey = new DataWithKey( streamName, data, newStreamVersion, newStoreVersion );
+					this._cacheFull.Add( newStoreVersion, dataWithKey );
+					this._cacheByKey.GetOrAdd( streamName, s => new List< DataWithKey > { dataWithKey } ).Add( dataWithKey );
+				}
+				this.StoreVersion = newStoreVersion;
+			}
+			finally
+			{
+				this._thread.ExitWriteLock();
+			}
+		}
 
-            }
-            finally
-            {
-                _thread.ExitWriteLock();
-            }
+		public IEnumerable< DataWithKey > ReadStream( string streamName, long afterStreamVersion, int maxCount )
+		{
+			if( null == streamName )
+				throw new ArgumentNullException( "streamName" );
+			if( afterStreamVersion < 0 )
+				throw new ArgumentOutOfRangeException( "afterStreamVersion", "Must be zero or greater." );
 
-        }
+			if( maxCount <= 0 )
+				throw new ArgumentOutOfRangeException( "maxCount", "Must be more than zero." );
 
-        public IEnumerable<DataWithKey> ReadStream(string streamName, long afterStreamVersion, int maxCount)
-        {
-            if (null == streamName)
-                throw new ArgumentNullException("streamName");
-            if (afterStreamVersion < 0)
-                throw new ArgumentOutOfRangeException("afterStreamVersion", "Must be zero or greater.");
+			List< DataWithKey > list;
+			var result = new LockedListWrapper< DataWithKey >( this._cacheByKey.TryGetValue( streamName, out list ) ? list : new List< DataWithKey >() );
 
-            if (maxCount <= 0)
-                throw new ArgumentOutOfRangeException("maxCount", "Must be more than zero.");
+			return result.Where( version => version.StreamVersion > afterStreamVersion ).Take( maxCount );
+		}
 
-            List< DataWithKey > list;
-            var result = new LockedListWrapper< DataWithKey >( _cacheByKey.TryGetValue(streamName, out list) ? list : new List<DataWithKey>() );
+		public IEnumerable< DataWithKey > ReadAll( long afterStoreVersion, int maxCount )
+		{
+			if( afterStoreVersion < 0 )
+				throw new ArgumentOutOfRangeException( "afterStoreVersion", "Must be zero or greater." );
 
-            return result.Where(version => version.StreamVersion > afterStreamVersion).Take(maxCount);
+			if( maxCount <= 0 )
+				throw new ArgumentOutOfRangeException( "maxCount", "Must be more than zero." );
 
-        }
+			if( this.StoreVersion <= afterStoreVersion )
+				return Enumerable.Empty< DataWithKey >();
 
-        public IEnumerable<DataWithKey> ReadAll(long afterStoreVersion, int maxCount)
-        {
-            if (afterStoreVersion < 0)
-                throw new ArgumentOutOfRangeException("afterStoreVersion", "Must be zero or greater.");
+			//			return new LockedListWrapper< DataWithKey >( this._cacheFull ).Where( key => key.StoreVersion > afterStoreVersion ).Take( maxCount );
+			return new StreamEnumerable( this._cacheFull, this.StoreVersion, afterStoreVersion, maxCount );
+		}
 
-            if (maxCount <= 0)
-                throw new ArgumentOutOfRangeException("maxCount", "Must be more than zero.");
+		public void Clear( Action executeWhenCommitting )
+		{
+			this._thread.EnterWriteLock();
+			try
+			{
+				executeWhenCommitting();
+				this._cacheFull = new Dictionary< long, DataWithKey >();
+				this._cacheByKey.Clear();
+				this.StoreVersion = 0;
+			}
+			finally
+			{
+				this._thread.ExitWriteLock();
+			}
+		}
+	}
 
-            return new LockedListWrapper< DataWithKey >( _cacheFull ).Where(key => key.StoreVersion > afterStoreVersion).Take(maxCount);
-        }
+	public class StreamEnumerable : IEnumerable< DataWithKey >
+	{
+		private readonly Dictionary< long, DataWithKey > _stream;
+		private readonly long _storeVersion;
+		private readonly long _afterStoreVersion;
+		private readonly int _maxCount;
 
-        public void Clear(Action executeWhenCommitting)
-        {
-            _thread.EnterWriteLock();
-            try
-            {
-                executeWhenCommitting();
-                _cacheFull = new List< DataWithKey >();
-                _cacheByKey.Clear();
-                StoreVersion = 0;
-            }
-            finally
-            {
-                _thread.ExitWriteLock();
-            }
-        }
-    }
+		public StreamEnumerable( Dictionary< long, DataWithKey > stream, long storeVersion, long afterStoreVersion, int maxCount )
+		{
+			this._stream = stream;
+			this._storeVersion = storeVersion;
+			this._afterStoreVersion = afterStoreVersion;
+			this._maxCount = maxCount;
+		}
+
+		public IEnumerator< DataWithKey > GetEnumerator()
+		{
+			return new StreamEnumerator( this._stream, this._storeVersion, this._afterStoreVersion, this._maxCount );
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return this.GetEnumerator();
+		}
+	}
+
+	public class StreamEnumerator : IEnumerator< DataWithKey >
+	{
+		private readonly Dictionary< long, DataWithKey > _stream;
+		private readonly long _storeVersion;
+		private readonly long _afterStoreVersion;
+		private readonly int _maxCount;
+		private long _index;
+		private int _eventsCount;
+		private DataWithKey _current;
+
+		public StreamEnumerator( Dictionary< long, DataWithKey > stream, long storeVersion, long afterStoreVersion, int maxCount )
+		{
+			this._stream = stream;
+			this._storeVersion = storeVersion;
+			this._afterStoreVersion = afterStoreVersion;
+			this._maxCount = maxCount;
+			this.Reset();
+		}
+
+		public bool MoveNext()
+		{
+			this._index++;
+			while( this._index <= this._storeVersion && this._eventsCount < this._maxCount )
+			{
+				DataWithKey @event;
+				if( this._stream.TryGetValue( this._index, out @event ) )
+				{
+					this._eventsCount++;
+					this._current = @event;
+					return true;
+				}
+				this._index++;
+			}
+			return false;
+		}
+
+		public void Reset()
+		{
+			this._index = this._afterStoreVersion;
+			this._eventsCount = 0;
+		}
+
+		public DataWithKey Current
+		{
+			get
+			{
+				if( this._index == _afterStoreVersion || this._eventsCount > this._maxCount || this._current == null )
+					throw new InvalidOperationException( "Current is outside of the accessible index" );
+
+				return this._current;
+			}
+		}
+
+		object IEnumerator.Current
+		{
+			get { return this.Current; }
+		}
+
+		public void Dispose()
+		{
+		}
+	}
 
 	public class LockedListWrapper< T > : IEnumerable< T >
 	{
@@ -162,7 +250,7 @@ namespace Lokad.Cqrs.TapeStorage
 
 		public IEnumerator< T > GetEnumerator()
 		{
-			return new LockedListEnumerator< T >( List, Count );
+			return new LockedListEnumerator< T >( this.List, this.Count );
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
